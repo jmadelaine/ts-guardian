@@ -27,10 +27,13 @@ type UnpackBasicType<T extends BasicType> = T extends 'undefined'
   ? unknown[]
   : never
 
-type GuardRecordKey = string | number
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface GuardRecord extends Record<GuardRecordKey, GuardRecord | Guard<unknown>> {}
-type Type = BasicType | GuardRecord
+interface GuardRecord extends Record<PropertyKey, GuardRecord | Guard<unknown>> {}
+
+type Guard<T extends unknown> = ((input: unknown) => input is T) & {
+  or: <U extends BasicType | GuardRecord | Guard<unknown>>(t: U) => Guard<T | UnpackType<U>>
+}
+
 type UnpackType<T extends unknown> = T extends BasicType
   ? UnpackBasicType<T>
   : T extends GuardRecord
@@ -38,9 +41,6 @@ type UnpackType<T extends unknown> = T extends BasicType
   : T extends Guard<infer V>
   ? V
   : never
-type Guard<T extends unknown> = ((input: unknown) => input is T) & {
-  or: <U extends Type>(t: U) => Guard<T | UnpackType<U>>
-}
 
 const getBasicTypeCheckerFor = (t: BasicType) => {
   switch (t) {
@@ -65,21 +65,17 @@ const getBasicTypeCheckerFor = (t: BasicType) => {
 }
 
 const isGuardRecordValid = <T extends GuardRecord>(guardRecord: T, input: unknown) => {
-  if (getBasicTypeCheckerFor('object')(input)) {
+  if (typeof input === 'object' && input !== null) {
     const guardRecordKeys = Object.keys(guardRecord)
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const inputObj = input as Record<GuardRecordKey, unknown>
-
+    const inputObj = input as Record<PropertyKey, unknown>
     for (const k of guardRecordKeys) {
       const value = guardRecord[k]
-
       if (typeof value === 'function') {
-        // value is a Guard
         if (!value(inputObj[k])) {
           return false
         }
       } else {
-        // Value must be a GuardRecord
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         if (!isGuardRecordValid(value as GuardRecord, inputObj[k])) {
           return false
@@ -91,32 +87,37 @@ const isGuardRecordValid = <T extends GuardRecord>(guardRecord: T, input: unknow
   return false
 }
 
-const createGuard = <T extends unknown>(orTypes: Type[]) => {
+const createGuard = <T extends unknown>(orTypes: (BasicType | GuardRecord | Guard<unknown>)[]) => {
   const guard: Guard<T> = (input: unknown): input is T => {
     const doSomeTypesMatch = orTypes.some(orType => {
       if (typeof orType === 'string') {
         return getBasicTypeCheckerFor(orType)(input)
+      } else if (typeof orType === 'function') {
+        return orType(input)
       } else {
-        return isGuardRecordValid(orType, input)
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        return isGuardRecordValid(orType as GuardRecord, input)
       }
     })
     return doSomeTypesMatch
   }
-
   guard.or = createOr<T>(orTypes)
-
   return guard
 }
 
-const createOr = <TPrev extends unknown>(orTypes: Type[]) => <TNew extends Type>(
+const createOr = <TPrev extends unknown>(orTypes: (BasicType | GuardRecord | Guard<unknown>)[]) => <
+  TNew extends BasicType | GuardRecord | Guard<unknown>
+>(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>> => {
   orTypes.push(t)
   return createGuard<TPrev | UnpackType<TNew>>(orTypes)
 }
 
-export const is = <T extends Type>(t: T): Guard<UnpackType<T>> => {
-  const orTypes: Type[] = []
+export const is = <T extends BasicType | GuardRecord | Guard<unknown>>(
+  t: T
+): Guard<UnpackType<T>> => {
+  const orTypes: (BasicType | GuardRecord | Guard<unknown>)[] = []
   orTypes.push(t)
   return createGuard<UnpackType<T>>(orTypes)
 }
