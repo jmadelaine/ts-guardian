@@ -75,13 +75,13 @@ const isGuardRecordValid = <T extends GuardRecord>(guardRecord: T, input: unknow
 
       if (typeof value === 'function') {
         // value is a Guard
-        if (!value(inputObj)) {
+        if (!value(inputObj[k])) {
           return false
         }
       } else {
         // Value must be a GuardRecord
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        if (!isGuardRecordValid(value as GuardRecord, inputObj)) {
+        if (!isGuardRecordValid(value as GuardRecord, inputObj[k])) {
           return false
         }
       }
