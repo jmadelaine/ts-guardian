@@ -1,21 +1,22 @@
 type BasicType =
-  | 'array'
+  | 'any'
   | 'boolean'
-  | 'function'
+  | 'bigint'
   | 'null'
   | 'number'
   | 'object'
   | 'string'
   | 'symbol'
   | 'undefined'
+  | 'unknown'
 
-type UnpackBasicType<T extends BasicType> = T extends 'array'
-  ? unknown[]
+type UnpackBasicType<T extends BasicType> = T extends 'any'
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any
   : T extends 'boolean'
   ? boolean
-  : T extends 'function'
-  ? // eslint-disable-next-line @typescript-eslint/ban-types
-    Function
+  : T extends 'bigint'
+  ? bigint
   : T extends 'null'
   ? null
   : T extends 'number'
@@ -29,6 +30,8 @@ type UnpackBasicType<T extends BasicType> = T extends 'array'
   ? symbol
   : T extends 'undefined'
   ? undefined
+  : T extends 'unknown'
+  ? unknown
   : never
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -46,28 +49,30 @@ type UnpackType<T extends unknown> = T extends BasicType
   ? V
   : never
 
-const getBasicTypeCheckerFor = (t: BasicType) => {
+const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
-    case 'array':
-      return (v: unknown): v is unknown[] => Array.isArray(v)
+    case 'any':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (_: unknown): _ is any => true
     case 'boolean':
       return (v: unknown): v is boolean => typeof v === 'boolean'
-    case 'function':
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      return (v: unknown): v is Function => typeof v === 'function'
+    case 'bigint':
+      return (v: unknown): v is bigint => typeof v === 'bigint'
     case 'null':
       return (v: unknown): v is null => v === null
     case 'number':
       return (v: unknown): v is number => typeof v === 'number'
     case 'object':
       // eslint-disable-next-line @typescript-eslint/ban-types
-      return (v: unknown): v is object => typeof v === 'object' && v !== null && !Array.isArray(v)
+      return (v: unknown): v is object => typeof v === 'object'
     case 'string':
       return (v: unknown): v is string => typeof v === 'string'
     case 'symbol':
       return (v: unknown): v is symbol => typeof v === 'symbol'
     case 'undefined':
       return (v: unknown): v is undefined => v === undefined
+    case 'unknown':
+      return (_: unknown): _ is unknown => true
   }
 }
 
@@ -96,7 +101,7 @@ const createGuard = <T extends unknown>(orTypes: (BasicType | GuardRecord | Guar
   const guard: Guard<T> = (input: unknown): input is T =>
     orTypes.some(orType => {
       if (typeof orType === 'string') {
-        return getBasicTypeCheckerFor(orType)(input)
+        return getBasicTypeGuard(orType)(input)
       }
       if (typeof orType === 'function') {
         return orType(input)
@@ -124,9 +129,8 @@ export const is = <T extends BasicType | GuardRecord | Guard<unknown>>(
   return createGuard<UnpackType<T>>(orTypes)
 }
 
-export const isArray = is('array')
 export const isBoolean = is('boolean')
-export const isFunction = is('function')
+export const isBigint = is('bigint')
 export const isNull = is('null')
 export const isNumber = is('number')
 export const isObject = is('object')
@@ -134,11 +138,10 @@ export const isString = is('string')
 export const isSymbol = is('symbol')
 export const isUndefined = is('undefined')
 
-export const isArrayOrUndefined = is('array').or('undefined')
-export const isBooleanOrUndefined = is('boolean').or('undefined')
-export const isFunctionOrUndefined = is('function').or('undefined')
-export const isNullOrUndefined = is('null').or('undefined')
-export const isNumberOrUndefined = is('number').or('undefined')
-export const isObjectOrUndefined = is('object').or('undefined')
-export const isStringOrUndefined = is('string').or('undefined')
-export const isSymbolOrUndefined = is('symbol').or('undefined')
+export const isBooleanOrUndefined = isBoolean.or('undefined')
+export const isBigintOrUndefined = isBigint.or('undefined')
+export const isNullOrUndefined = isNull.or('undefined')
+export const isNumberOrUndefined = isNumber.or('undefined')
+export const isObjectOrUndefined = isObject.or('undefined')
+export const isStringOrUndefined = isString.or('undefined')
+export const isSymbolOrUndefined = isSymbol.or('undefined')
