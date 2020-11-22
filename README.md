@@ -1,4 +1,7 @@
-# type-guardian
+[![Unlicense license][license-badge]][license]
+[![NPM version][npm-badge]][npm]
+
+# ts-guardian
 
 ## Introduction
 
@@ -7,15 +10,12 @@ Type guards you can trust 👍
 Type Guardian uses the power of [TypeScript][typescript] and [functional programming][functional-programming] to protect your data types, so rest easy.
 
 <br />
-
----
-
 <br />
 
 ## Index
 
-- [The problem](#the-problem)
-- [The solution](#the-solution)
+- [The problem](#the-problem-)
+- [The solution](#the-solution-)
 - [Installation](#installation)
 - [The `is` function](#the-is-function)
 - [The `or` function](#the-or-function)
@@ -26,9 +26,6 @@ Type Guardian uses the power of [TypeScript][typescript] and [functional program
 - [Convenience guards](#convenience-guards)
 
 <br />
-
----
-
 <br />
 
 ## The problem 👎
@@ -77,7 +74,9 @@ const parseUser = (input: unknown): User | undefined => {
 }
 ```
 
-An obvious problem is that the `isUser` function is **verbose**. That's a lot of code to write (and read).
+Not pretty.
+
+An obvious problem is that the `isUser` function is **incredibly verbose**. That's a lot of code to write, and it's hard to read.
 
 **The more important (and less obvious) problem is that using user-defined type guards leaves us open to runtime errors.** 😫
 
@@ -95,16 +94,13 @@ const isUser = (input: unknown): input is User => {
 
 Clearly this function is not enough to confirm that `input` is of type `User`, but TypeScript doesn't complain.
 
-User-defined type predicates are effectively type assertions. By saying to TypeScript "if I return `true`, consider `input` to be of type `User`", we lose type safety.
+Type predicates are effectively type assertions. By saying to TypeScript "if I return `true`, consider `input` to be of type `User`", we lose type safety.
 
 <br />
 
 _So how can we guarantee that a value is compatible with our user-defined type?_
 
 <br />
-
----
-
 <br />
 
 ## The solution 👍
@@ -120,7 +116,7 @@ Instead, we define a **primitive-based type** of what a `User` object looks like
 > A _primitive-based type_ is a type constructed only from primitve TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
 
 ```ts
-import { is } from 'type-guardian'
+import { is } from 'ts-guardian'
 
 // We make no assumptions that the data is a user-defined type
 const isUser = is({
@@ -163,26 +159,20 @@ const parseUser = (input: unknown): User | undefined => {
 In `parseUser`, if the type predicate from `isUser` is not compatible with the `User` type, then we get a TypeScript compiler error telling us this. 🎉
 
 <br />
-
----
-
 <br />
 
 ## Installation
 
 ```
-npm i type-guardian
+npm i ts-guardian
 ```
 
 <br />
-
----
-
 <br />
 
 ## The `is` function
 
-`type-guardian` exports the `is` function, which is a curried function used to build type guards. The `is` function takes a parameter used to define a type, and returns a type guard for that type:
+`ts-guardian` exports the `is` function, which is a curried function used to build type guards. The `is` function takes a parameter used to define a type, and returns a type guard for that type:
 
 ```ts
 // The `is` function looks something like this:
@@ -194,7 +184,7 @@ Parameter `t` is used to define the type definition for the guard.
 The returned function `(input) => boolean` is the type guard itself, returning `true` if the `input` parameter satisfies the type definition for the guard. For example:
 
 ```ts
-import { is } from 'type-guardian'
+import { is } from 'ts-guardian'
 
 const data = getFromApi() // data is of type `unknown`
 
@@ -209,17 +199,14 @@ if (isString(data)) {
 ```
 
 <br />
-
----
-
 <br />
 
 ## The `or` function
 
-`type-guardian` wouldn't be useful unless we could define multiple types for the same value. The `is` function has an `or` method, which works in the same way. For example:
+`ts-guardian` wouldn't be useful unless we could define multiple types for the same value. The `is` function has an `or` method, which works in the same way. For example:
 
 ```ts
-import { is } from 'type-guardian'
+import { is } from 'ts-guardian'
 
 const data = getFromApi() // data is of type `unknown`
 
@@ -234,9 +221,6 @@ if (isStringOrNumber(data)) {
 ```
 
 <br />
-
----
-
 <br />
 
 ## Basic guards
@@ -257,7 +241,7 @@ isStringOrNumber(5) // returns true
 isStringOrNumber('hello') // returns true
 ```
 
-Basic type guards are the bread and butter of `type-guardian` and are used as building blocks to form more complex type guards.
+Basic type guards are the bread and butter of `ts-guardian` and are used as building blocks to form more complex type guards.
 
 Here's the complete set of keys:
 
@@ -277,9 +261,6 @@ Here's the complete set of keys:
 > When combined with other gaurds, the `any` and `unknown` type guards take precedence. These are useful in complex types where you want to specify part of the type as `any` or `unknown`, for example, an object member.
 
 <br />
-
----
-
 <br />
 
 ## Guard objects
@@ -305,14 +286,11 @@ isObjectWhereAgeIsNumber({ name: 'Bob', age: 40 }) // returns true
 ```
 
 <br />
-
----
-
 <br />
 
 ## Guard chaining
 
-`type-guardian` uses currying, which means you can chain as many guards together as you like!
+`ts-guardian` uses currying, which means you can chain as many guards together as you like!
 
 For example:
 
@@ -345,9 +323,6 @@ input is {
 Go crazy!
 
 <br />
-
----
-
 <br />
 
 ## Guard reuse
@@ -383,16 +358,13 @@ const isStringNumberUndefinedOrNull = isStringOrNull.or(isNumberOrUndefined)
 ```
 
 <br />
-
----
-
 <br />
 
 ## Convenience guards
 
 From the examples, you probably noticed we repeated ourselves an awful lot when guarding simple types.
 
-Luckily, `type-guardian` also exports a bunch of pre-defined convenience guards for common types:
+Luckily, `ts-guardian` also exports a bunch of pre-defined convenience guards for common types:
 
 | Convenience guard      | Type of guard                         | Equivalent `is` function        |
 | ---------------------- | ------------------------------------- | ------------------------------- |
@@ -417,7 +389,7 @@ This makes our code even cleaner.
 The original `isUser` function now looks something like this:
 
 ```ts
-import { is, isNumber, isString, isStringOrUndefined, isBoolean, isUndefined } from 'type-guardian'
+import { is, isNumber, isString, isStringOrUndefined, isBoolean, isUndefined } from 'ts-guardian'
 
 const isUser = is({
   id: isNumber,
@@ -436,6 +408,10 @@ Nice!
 <br />
 <br />
 
+[license-badge]: https://img.shields.io/badge/license-Unlicense-blue.svg
+[license]: license.md
+[npm]: https://npmjs.org/package/ts-guardian
+[npm-badge]: https://badge.fury.io/js/ts-guardian.svg
 [user-defined-type-guards]: https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards
 [typescript]: https://www.typescriptlang.org/docs
 [functional-programming]: https://en.wikipedia.org/wiki/Functional_programming

@@ -1,7 +1,7 @@
 {
-  "name": "type-guardian",
+  "name": "ts-guardian",
   "version": "0.0.1",
-  "description": "Functional type guarding",
+  "description": "Functional, composable, reliable type guards",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "sideEffects": false,
@@ -17,6 +17,8 @@
   },
   "keywords": [
     "type",
+    "predicate",
+    "typescript",
     "guard",
     "guards",
     "functional",
@@ -34,6 +36,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jmadelaine/type-guardian.git"
+    "url": "https://github.com/jmadelaine/ts-guardian.git"
   }
 }
