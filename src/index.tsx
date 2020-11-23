@@ -204,10 +204,3 @@ export const isNumberOrUndefined = isNumber.or('undefined')
 export const isObjectOrUndefined = isObject.or('undefined')
 export const isStringOrUndefined = isString.or('undefined')
 export const isSymbolOrUndefined = isSymbol.or('undefined')
-
-const guard1 = isArray('string').orArray('boolean')
-const x = 0 as unknown
-
-if (guard1(x)) {
-  x
-}
