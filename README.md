@@ -10,22 +10,20 @@ Type guards you can trust! 👍
 TS Guardian uses the power of [TypeScript][typescript] and [functional programming][functional-programming] to protect your data types, so rest easy.
 
 <br />
-<br />
 
 ## Index
 
 - [Quick start](#quick-start)
 - [Installation](#installation)
 - [Reliable type guards](#reliable-type-guards)
-- [The `is` function](#the-is-function)
-- [The `or` function](#the-or-function)
+- [The `is` and `or` functions](#the-is-and-or-functions)
+- [The `isArray` and `orArray` functions](#the-is-array-and-or-array-functions)
 - [Basic guards](#basic-guards)
 - [Guard objects](#guard-objects)
 - [Guard chaining](#guard-chaining)
 - [Guard composition](#guard-composition)
 - [Convenience guards](#convenience-guards)
 
-<br />
 <br />
 
 ## Quick start
@@ -111,7 +109,6 @@ if (isContact(value)) {
 }
 ```
 
-<br />
 <br />
 
 ## Reliable type guards
@@ -244,7 +241,6 @@ In `parseUser`, if the type predicate from `isUser` is not compatible with the `
 Not only that, but the syntax is clean, concise, and readable. Double thumbs up! 👍 👍
 
 <br />
-<br />
 
 ## Installation
 
@@ -253,9 +249,10 @@ npm i ts-guardian
 ```
 
 <br />
-<br />
 
-## The `is` function
+## The `is` and `or` functions
+
+### `is`
 
 `ts-guardian` exports the `is` function, which is a curried function used to build type guards. The `is` function takes a parameter used to define a type, and returns a type guard for that type:
 
@@ -266,7 +263,7 @@ const is = t => input => boolean
 
 Parameter `t` is used to define the type definition for the guard.
 
-The returned function `input => boolean` is the type guard itself, returning `true` if the `input` parameter satisfies the type definition for the guard. For example:
+The returned function `input => boolean` is the type guard itself, returning `true` if the `input` parameter satisfies the type definition for the guard:
 
 ```ts
 import { is } from 'ts-guardian'
@@ -283,12 +280,9 @@ if (isString(data)) {
 }
 ```
 
-<br />
-<br />
+### `or`
 
-## The `or` function
-
-`ts-guardian` wouldn't be useful unless we could define multiple types for the same value. The `is` function has an `or` method, which works in the same way. For example:
+`ts-guardian` wouldn't be useful unless we could define multiple types for the same value. The `is` function has an `or` method, which works in the same way:
 
 ```ts
 import { is } from 'ts-guardian'
@@ -305,7 +299,6 @@ if (isStringOrNumber(data)) {
 }
 ```
 
-<br />
 <br />
 
 ## Basic guards
@@ -346,6 +339,31 @@ Here's the complete set of keys:
 > When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you want to specify part of the type as `any` or `unknown`, for example, an object member.
 
 <br />
+
+## The `isArray` and `orArray` functions
+
+Similar to `is` and `or`, but the passed types will be used to type the elements of an array:
+
+```ts
+import { is } from 'ts-guardian'
+
+const data = getFromApi() // data is of type `unknown`
+
+// Type guard for `string[]`
+const isStringArray = isArray('string')
+
+// Type guard for `(string | number)[]`
+const isStringOrNumberArray = isArray(is('string').or('number'))
+
+// Type guard for `string[] | number[]`
+const isStringArrayOrNumberArray = isArray('string').orArray('number')
+
+// Type guard for `string[] | undefined
+const isStringArrayOrUndefined = is('undefined').orArray('string')
+```
+
+> Note the difference between `isArray(is('string').or('number'))` which produces a guard for `(string | number)[]`, and `isArray('string').orArray('number')` which creates a guard for `string[] | number[]`.
+
 <br />
 
 ## Guard objects
@@ -368,7 +386,6 @@ hasAge({ name: 'Bob' }) // returns false
 hasAge({ name: 'Bob', age: 40 }) // returns true
 ```
 
-<br />
 <br />
 
 ## Guard chaining
@@ -404,7 +421,6 @@ input is {
 Go crazy!
 
 <br />
-<br />
 
 ## Guard composition
 
@@ -437,7 +453,6 @@ const isStringOrNull = is('string').or('null')
 const isStringNumberUndefinedOrNull = isStringOrNull.or(isNumberOrUndefined)
 ```
 
-<br />
 <br />
 
 ## Convenience guards
@@ -484,7 +499,6 @@ const isUser = is({
 
 Nice!
 
-<br />
 <br />
 
 [license-badge]: https://img.shields.io/badge/license-Unlicense-blue.svg

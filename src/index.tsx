@@ -39,6 +39,7 @@ interface GuardRecord extends Record<PropertyKey, GuardRecord | Guard<unknown>> 
 
 type Guard<T extends unknown> = ((input: unknown) => input is T) & {
   or: <U extends BasicType | GuardRecord | Guard<unknown>>(t: U) => Guard<T | UnpackType<U>>
+  orArray: <U extends BasicType | GuardRecord | Guard<unknown>>(t: U) => Guard<T | UnpackType<U>[]>
 }
 
 type UnpackType<T extends unknown> = T extends BasicType
@@ -97,36 +98,94 @@ const isGuardRecordValid = <T extends GuardRecord>(guardRecord: T, input: unknow
   return true
 }
 
-const createGuard = <T extends unknown>(orTypes: (BasicType | GuardRecord | Guard<unknown>)[]) => {
+const isTypeValid = (
+  t: BasicType | GuardRecord | Guard<unknown> | ['every', BasicType | GuardRecord | Guard<unknown>],
+  input: unknown
+): boolean => {
+  if (typeof t === 'string') {
+    return getBasicTypeGuard(t)(input)
+  }
+  if (typeof t === 'function') {
+    return t(input)
+  }
+  if (Array.isArray(t)) {
+    if (t[0] === 'every') {
+      return Array.isArray(input) && input.every(el => isTypeValid(t[1], el))
+    } else {
+      return false
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return isGuardRecordValid(t as GuardRecord, input)
+}
+
+const createGuard = <T extends unknown>(
+  orTypes: (
+    | BasicType
+    | GuardRecord
+    | Guard<unknown>
+    | ['every', BasicType | GuardRecord | Guard<unknown>]
+  )[]
+) => {
   const guard: Guard<T> = (input: unknown): input is T =>
     orTypes.some(orType => {
-      if (typeof orType === 'string') {
-        return getBasicTypeGuard(orType)(input)
-      }
-      if (typeof orType === 'function') {
-        return orType(input)
-      }
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return isGuardRecordValid(orType as GuardRecord, input)
+      return isTypeValid(orType, input)
     })
   guard.or = createOr<T>(orTypes)
+  guard.orArray = createOrArray<T>(orTypes)
   return guard
 }
 
-const createOr = <TPrev extends unknown>(orTypes: (BasicType | GuardRecord | Guard<unknown>)[]) => <
-  TNew extends BasicType | GuardRecord | Guard<unknown>
->(
+const createOr = <TPrev extends unknown>(
+  orTypes: (
+    | BasicType
+    | GuardRecord
+    | Guard<unknown>
+    | ['every', BasicType | GuardRecord | Guard<unknown>]
+  )[]
+) => <TNew extends BasicType | GuardRecord | Guard<unknown>>(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>> => {
   orTypes.push(t)
   return createGuard<TPrev | UnpackType<TNew>>(orTypes)
 }
 
+const createOrArray = <TPrev extends unknown>(
+  orTypes: (
+    | BasicType
+    | GuardRecord
+    | Guard<unknown>
+    | ['every', BasicType | GuardRecord | Guard<unknown>]
+  )[]
+) => <TNew extends BasicType | GuardRecord | Guard<unknown>>(
+  t: TNew
+): Guard<TPrev | UnpackType<TNew>[]> => {
+  orTypes.push(['every', t])
+  return createGuard<TPrev | UnpackType<TNew>[]>(orTypes)
+}
+
 export const is = <T extends BasicType | GuardRecord | Guard<unknown>>(
   t: T
 ): Guard<UnpackType<T>> => {
-  const orTypes: (BasicType | GuardRecord | Guard<unknown>)[] = [t]
+  const orTypes: (
+    | BasicType
+    | GuardRecord
+    | Guard<unknown>
+    | ['every', BasicType | GuardRecord | Guard<unknown>]
+  )[] = [t]
   return createGuard<UnpackType<T>>(orTypes)
+}
+
+export const isArray = <T extends BasicType | GuardRecord | Guard<unknown>>(
+  t: T
+): Guard<UnpackType<T>[]> => {
+  const orTypes: (
+    | BasicType
+    | GuardRecord
+    | Guard<unknown>
+    | ['every', BasicType | GuardRecord | Guard<unknown>]
+  )[] = [['every', t]]
+  return createGuard<UnpackType<T>[]>(orTypes)
 }
 
 export const isBoolean = is('boolean')
@@ -145,3 +204,10 @@ export const isNumberOrUndefined = isNumber.or('undefined')
 export const isObjectOrUndefined = isObject.or('undefined')
 export const isStringOrUndefined = isString.or('undefined')
 export const isSymbolOrUndefined = isSymbol.or('undefined')
+
+const guard1 = isArray('string').orArray('boolean')
+const x = 0 as unknown
+
+if (guard1(x)) {
+  x
+}

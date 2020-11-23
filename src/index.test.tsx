@@ -1,4 +1,4 @@
-import { is } from '.'
+import { is, isArray } from '.'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -112,5 +112,67 @@ describe('is', () => {
     expectGuard(is(stringGuard), '')
     expectGuard(numberOrStringGuard, 0)
     expectGuard(numberOrStringGuard, '')
+  })
+  it("allows chaining 'orArray'", () => {
+    const guard = is('string').orArray('number')
+    expectGuard(guard, '')
+    expectGuard(guard, [])
+    expectGuard(guard, [1])
+    expectGuard(guard, [2, 3, 4])
+    expectGuard(guard, [5, '6', 7], false)
+  })
+})
+
+describe('isArray', () => {
+  it('guards basic array types', () => {
+    for (const t of basicTypes) {
+      for (const k of basicValueKeys) {
+        expectGuard(
+          isArray(t),
+          [basicValues[k]],
+          t === 'any' ||
+            t === 'unknown' ||
+            (t === 'undefined' && (k.includes('any') || k.includes('unknown'))) ||
+            (t === 'object' && k.includes('null'))
+            ? true
+            : k.includes(t)
+        )
+      }
+    }
+  })
+  it('guards objects', () => {
+    // Simple object
+    expectGuard(isArray({}), [{}])
+
+    // Single basic prop
+    expectGuard(
+      isArray({
+        prop1: is('string'),
+      }),
+      [
+        {
+          prop1: '',
+        },
+      ]
+    )
+  })
+  it('allows guard chaining', () => {
+    const guard = isArray('boolean').or('null').orArray('number')
+    expectGuard(guard, [true, false])
+    expectGuard(guard, null)
+    expectGuard(guard, [0, 1, 2])
+    expectGuard(guard, [])
+    expectGuard(guard, [true, 0, 1, false], false)
+    expectGuard(guard, '', false)
+    expectGuard(guard, 0, false)
+  })
+  it('allows guard of guards', () => {
+    const guard = isArray(is('boolean').or('number'))
+    expectGuard(guard, [true, false])
+    expectGuard(guard, [0, 1, 2])
+    expectGuard(guard, [])
+    expectGuard(guard, [true, 0, 1, false])
+    expectGuard(guard, [''], false)
+    expectGuard(guard, 0, false)
   })
 })
