@@ -20,6 +20,7 @@ TS Guardian uses the power of [TypeScript][typescript] and [functional programmi
 - [The `isArray` and `orArray` functions](#the-is-array-and-or-array-functions)
 - [Basic guards](#basic-guards)
 - [Guard objects](#guard-objects)
+- [Guard tuples](#guard-tuples)
 - [Guard chaining](#guard-chaining)
 - [Guard composition](#guard-composition)
 - [Convenience guards](#convenience-guards)
@@ -72,11 +73,22 @@ if (isId(value)) {
 // Object type guards
 //
 
-const hasPrice = is({ price: is('number') })
+const hasMessage = is({ message: is('string') })
 
-if (hasPrice(value)) {
-  // value is of type `{ price: number }`
-  const price = value.price
+if (hasMessage(value)) {
+  // value is of type `{ message: string }`
+  const message = value.message
+}
+
+//
+// Tuple type guards
+//
+
+const isLabelledCoordinate = is([is('string'), is('number'), is('number')])
+
+if (isLabelledCoordinate(value)) {
+  // value is of type `[string, number, number]`
+  const [label, x, y] = value
 }
 
 //
@@ -85,8 +97,8 @@ if (hasPrice(value)) {
 
 type Contact = {
   name: string
-  email?: string
-  phone?: string | number
+  email: string | undefined
+  phone: string | number | undefined
 }
 
 const isStringOrUndefined = isString.or('undefined')
@@ -384,6 +396,20 @@ const hasAge = is({ age: is('number') })
 
 hasAge({ name: 'Bob' }) // returns false
 hasAge({ name: 'Bob', age: 40 }) // returns true
+```
+
+<br />
+
+## Guard tuples
+
+To define a tuple type guard, pass in an array containing guards for each element of the tuple:
+
+```ts
+// Type guard for `[string, number]`
+const isTuple = is([is('string'), is('number')])
+
+isTuple(['hello']) // returns false
+isTuple(['hello', 5]) // returns true
 ```
 
 <br />

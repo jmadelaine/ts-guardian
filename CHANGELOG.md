@@ -1,5 +1,9 @@
 # Changelog
 
+[0.0.4] 2020-11-25
+
+- Add support for tuples
+
 [0.0.3] 2020-11-23
 
 - Add support for array types with `isArray` and `orArray`
