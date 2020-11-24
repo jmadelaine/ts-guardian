@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type BasicType =
   | 'any'
   | 'boolean'
@@ -35,20 +36,35 @@ type UnpackBasicType<T extends BasicType> = T extends 'any'
   : never
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface GuardRecord extends Record<PropertyKey, GuardRecord | Guard<unknown>> {}
+interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
+
+type GuardTuple = [] | (GuardRecord | Guard<any>)[]
 
 type Guard<T extends unknown> = ((input: unknown) => input is T) & {
-  or: <U extends BasicType | GuardRecord | Guard<unknown>>(t: U) => Guard<T | UnpackType<U>>
-  orArray: <U extends BasicType | GuardRecord | Guard<unknown>>(t: U) => Guard<T | UnpackType<U>[]>
+  or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+    t: U
+  ) => Guard<T | UnpackType<U>>
+  orArray: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+    t: U
+  ) => Guard<T | UnpackType<U>[]>
 }
+
+type OrType =
+  | BasicType
+  | GuardRecord
+  | GuardTuple
+  | Guard<any>
+  | ['every', BasicType | GuardRecord | GuardTuple | Guard<any>]
 
 type UnpackType<T extends unknown> = T extends BasicType
   ? UnpackBasicType<T>
-  : T extends GuardRecord
+  : T extends GuardRecord | GuardTuple
   ? { [key in keyof T]: UnpackType<T[key]> }
   : T extends Guard<infer V>
   ? V
   : never
+
+const arrayMarker = 'every'
 
 const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
@@ -77,56 +93,51 @@ const getBasicTypeGuard = (t: BasicType) => {
   }
 }
 
-const isGuardRecordValid = <T extends GuardRecord>(guardRecord: T, input: unknown) => {
-  if (typeof input !== 'object' || input === null) {
-    return false
-  }
-  const guardRecordKeys = Object.keys(guardRecord)
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const inputObj = input as Record<PropertyKey, unknown>
-  for (const k of guardRecordKeys) {
-    const value = guardRecord[k]
-    if (typeof value === 'function') {
-      if (!value(inputObj[k])) {
-        return false
-      }
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    } else if (!isGuardRecordValid(value as GuardRecord, inputObj[k])) {
-      return false
-    }
-  }
-  return true
-}
-
-const isTypeValid = (
-  t: BasicType | GuardRecord | Guard<unknown> | ['every', BasicType | GuardRecord | Guard<unknown>],
-  input: unknown
-): boolean => {
+const isTypeValid = (t: OrType, input: unknown): boolean => {
+  // Basic type
   if (typeof t === 'string') {
     return getBasicTypeGuard(t)(input)
   }
+  // Guard
   if (typeof t === 'function') {
     return t(input)
   }
+  // Array or Tuple
   if (Array.isArray(t)) {
-    if (t[0] === 'every') {
-      return Array.isArray(input) && input.every(el => isTypeValid(t[1], el))
-    } else {
+    if (!Array.isArray(input)) {
       return false
     }
+    // Array
+    if (t[0] === arrayMarker) {
+      return input.every(el => isTypeValid(t[1]!, el))
+    }
+    // Tuple
+    for (let i = 0; i < t.length; ++i) {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      if (!isTypeValid((t as any[])[i], input[i])) {
+        return false
+      }
+    }
+    return true
   }
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return isGuardRecordValid(t as GuardRecord, input)
+  // Guard record
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (typeof t === 'object' && t !== null) {
+    if (typeof input !== 'object' || input === null) {
+      return false
+    }
+    for (const k of Object.keys(t)) {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      if (!isTypeValid((t as GuardRecord)[k], (input as Record<PropertyKey, unknown>)[k])) {
+        return false
+      }
+    }
+    return true
+  }
+  return false
 }
 
-const createGuard = <T extends unknown>(
-  orTypes: (
-    | BasicType
-    | GuardRecord
-    | Guard<unknown>
-    | ['every', BasicType | GuardRecord | Guard<unknown>]
-  )[]
-) => {
+const createGuard = <T extends unknown>(orTypes: OrType[]) => {
   const guard: Guard<T> = (input: unknown): input is T =>
     orTypes.some(orType => {
       return isTypeValid(orType, input)
@@ -136,55 +147,35 @@ const createGuard = <T extends unknown>(
   return guard
 }
 
-const createOr = <TPrev extends unknown>(
-  orTypes: (
-    | BasicType
-    | GuardRecord
-    | Guard<unknown>
-    | ['every', BasicType | GuardRecord | Guard<unknown>]
-  )[]
-) => <TNew extends BasicType | GuardRecord | Guard<unknown>>(
+const createOr = <TPrev extends unknown>(orTypes: OrType[]) => <
+  TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
+>(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>> => {
   orTypes.push(t)
   return createGuard<TPrev | UnpackType<TNew>>(orTypes)
 }
 
-const createOrArray = <TPrev extends unknown>(
-  orTypes: (
-    | BasicType
-    | GuardRecord
-    | Guard<unknown>
-    | ['every', BasicType | GuardRecord | Guard<unknown>]
-  )[]
-) => <TNew extends BasicType | GuardRecord | Guard<unknown>>(
+const createOrArray = <TPrev extends unknown>(orTypes: OrType[]) => <
+  TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
+>(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>[]> => {
-  orTypes.push(['every', t])
+  orTypes.push([arrayMarker, t])
   return createGuard<TPrev | UnpackType<TNew>[]>(orTypes)
 }
 
-export const is = <T extends BasicType | GuardRecord | Guard<unknown>>(
+export const is = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>> => {
-  const orTypes: (
-    | BasicType
-    | GuardRecord
-    | Guard<unknown>
-    | ['every', BasicType | GuardRecord | Guard<unknown>]
-  )[] = [t]
+  const orTypes: OrType[] = [t]
   return createGuard<UnpackType<T>>(orTypes)
 }
 
-export const isArray = <T extends BasicType | GuardRecord | Guard<unknown>>(
+export const isArray = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>[]> => {
-  const orTypes: (
-    | BasicType
-    | GuardRecord
-    | Guard<unknown>
-    | ['every', BasicType | GuardRecord | Guard<unknown>]
-  )[] = [['every', t]]
+  const orTypes: OrType[] = [[arrayMarker, t]]
   return createGuard<UnpackType<T>[]>(orTypes)
 }
 

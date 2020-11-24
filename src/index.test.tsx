@@ -96,6 +96,16 @@ describe('is', () => {
       }
     )
   })
+  it('guards tuples', () => {
+    const str = is('string')
+    const num = is('number')
+
+    // Simple object
+    expectGuard(is([str]), [''])
+    expectGuard(is([num]), [5])
+    expectGuard(is([str, num]), ['', 5])
+    expectGuard(is([str, num]), [5, ''], false)
+  })
   it('allows guard chaining', () => {
     const guard = is('boolean').or('null').or('number').or('string').or('undefined')
     expectGuard(guard, true)
