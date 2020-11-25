@@ -1,4 +1,4 @@
-import { is, isArray, isBoolean, isNumber, isString } from '..'
+import { is, isArray, createParser } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -131,7 +131,7 @@ describe('is', () => {
     expectGuard(guard, [2, 3, 4])
     expectGuard(guard, [5, '6', 7], false)
   })
-  it.only('Does not mutate orTypes of extended guards', () => {
+  it('Does not mutate orTypes of extended guards', () => {
     const guard = is('string')
     expectGuard(is('string'), undefined, false)
     expectGuard(guard, undefined, false)
@@ -193,5 +193,50 @@ describe('isArray', () => {
     expectGuard(guard, [true, 0, 1, false])
     expectGuard(guard, [''], false)
     expectGuard(guard, 0, false)
+  })
+})
+
+describe('parser', () => {
+  it('parses basic types', () => {
+    const a = ''
+    expect(createParser(is('any'))(a)).toBe(a)
+    const bo = true
+    expect(createParser(is('boolean'))(bo)).toBe(bo)
+    const bi = BigInt(1)
+    expect(createParser(is('bigint'))(bi)).toBe(bi)
+    const nul = null
+    expect(createParser(is('null'))(nul)).toBe(nul)
+    const num = 0
+    expect(createParser(is('number'))(num)).toBe(num)
+    const o = {}
+    expect(createParser(is('object'))(o)).toBe(o)
+    const st = ''
+    expect(createParser(is('string'))(st)).toBe(st)
+    const sy = Symbol()
+    expect(createParser(is('symbol'))(sy)).toBe(sy)
+    const und = undefined
+    expect(createParser(is('undefined'))(und)).toBe(und)
+    const unk = ''
+    expect(createParser(is('unknown'))(unk)).toBe(unk)
+
+    expect(createParser(is('number'))(st)).toBe(undefined)
+    expect(createParser(is('string'))(num)).toBe(undefined)
+  })
+  it('parses objects', () => {
+    const o = {
+      prop1: 'hello',
+    }
+
+    const guardSuccess = is({
+      prop1: is('string'),
+    })
+
+    const guardFail = is({
+      prop1: is('string'),
+      prop2: is('string'),
+    })
+
+    expect(createParser(guardSuccess)(o)).toBe(o)
+    expect(createParser(guardFail)(o)).toBe(undefined)
   })
 })

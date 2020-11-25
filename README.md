@@ -24,6 +24,7 @@ TS Guardian uses the power of [TypeScript][typescript] and [functional programmi
 - [Guard chaining](#guard-chaining)
 - [Guard composition](#guard-composition)
 - [Convenience guards](#convenience-guards)
+- [The `createParser` function](#the-createparser-function)
 
 <br />
 
@@ -524,6 +525,73 @@ const isUser = is({
 ```
 
 Nice!
+
+<br />
+
+## The `createParser` function
+
+Consider the following type and its guard:
+
+```ts
+type Book = {
+  title: string
+  author: string
+}
+
+const isBook = is({
+  title: isString,
+  author: isString,
+})
+```
+
+When testing an unkown value, if the type is compatible, most of the time you'll want to type that value as a user-defined type and not just the primitive-based type returned from the type guard.
+
+If the type of the unknown value is not compatible with the user-defiend type, you might want to throw an error or return `undefined`.
+
+One way of doing that is with a parse function:
+
+```ts
+const parseBook = (input: unknown): Book | undefined => {
+  return isBook(input) ? input : undefined
+}
+```
+
+The great thing about this function is that it's type-safe. TypeScript complains if the type predicate returned from `isBook` is not compatible with the `Book` type. Great, but writing this function over and over again gets a little tedious.
+
+Instead, you can call the `createParser` function:
+
+```ts
+import { createParser } from 'ts-guardian'
+
+const parseBook = createParser<Book>(isBook)
+```
+
+The `createParser` function takes a guard, and returns a function that you can use to parse values.
+
+The returned function performs exactly as the previous `parseBook` function does. It takes a value to parse, and if the guard passes, will return the value typed as the supplied user-defined type. If the guard does not pass, the function returns `undefined`:
+
+```ts
+const book = {
+  title: 'Odyssey',
+  author: 'Homer',
+}
+
+const film = {
+  title: 'Psycho',
+  director: 'Alfred Hitchcock',
+}
+
+parseBook(book) // returns book as type `Book`
+parseBook(film) // returns undefined
+```
+
+The `createParser` function is also type-safe. TypeScript will complain if you try to create a parser for a user-defined type that isn't compatible with the supplied type guard:
+
+```ts
+const parseBook = createParser<Book>(isBook) // Fine
+
+const parseBook = createParser<Book>(isString) // TypeScript error - type 'string' is not assignable to type 'Book'
+```
 
 <br />
 

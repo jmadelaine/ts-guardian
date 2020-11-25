@@ -187,3 +187,26 @@ export const isNumberOrUndefined = isNumber.or('undefined')
 export const isObjectOrUndefined = isObject.or('undefined')
 export const isStringOrUndefined = isString.or('undefined')
 export const isSymbolOrUndefined = isSymbol.or('undefined')
+
+type PredicateType<TGuard extends unknown> = TGuard extends (inp: unknown) => inp is infer U
+  ? U
+  : never
+
+export const createParser = <
+  T extends unknown = undefined,
+  TGuard extends (input: unknown) => input is unknown = (input: unknown) => input is T
+>(
+  guard: TGuard
+) => (
+  input: unknown
+): T extends undefined
+  ? PredicateType<TGuard> | undefined
+  : PredicateType<TGuard> extends T
+  ? T | undefined
+  : never => {
+  return (guard(input) ? input : undefined) as T extends undefined
+    ? PredicateType<TGuard> | undefined
+    : PredicateType<TGuard> extends T
+    ? T | undefined
+    : never
+}
