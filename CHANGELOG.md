@@ -1,5 +1,9 @@
 # Changelog
 
+[0.0.5] 2020-11-25
+
+- Prevent mutation of an extended guards' orTypes
+
 [0.0.4] 2020-11-25
 
 - Add support for tuples

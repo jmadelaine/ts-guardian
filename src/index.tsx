@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type BasicType =
   | 'any'
   | 'boolean'
@@ -12,8 +11,7 @@ type BasicType =
   | 'unknown'
 
 type UnpackBasicType<T extends BasicType> = T extends 'any'
-  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any
+  ? any
   : T extends 'boolean'
   ? boolean
   : T extends 'bigint'
@@ -23,8 +21,7 @@ type UnpackBasicType<T extends BasicType> = T extends 'any'
   : T extends 'number'
   ? number
   : T extends 'object'
-  ? // eslint-disable-next-line @typescript-eslint/ban-types
-    object
+  ? object
   : T extends 'string'
   ? string
   : T extends 'symbol'
@@ -35,7 +32,6 @@ type UnpackBasicType<T extends BasicType> = T extends 'any'
   ? unknown
   : never
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
 
 type GuardTuple = [] | (GuardRecord | Guard<any>)[]
@@ -69,7 +65,6 @@ const arrayMarker = 'every'
 const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
     case 'any':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (_: unknown): _ is any => true
     case 'boolean':
       return (v: unknown): v is boolean => typeof v === 'boolean'
@@ -113,21 +108,18 @@ const isTypeValid = (t: OrType, input: unknown): boolean => {
     }
     // Tuple
     for (let i = 0; i < t.length; ++i) {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       if (!isTypeValid((t as any[])[i], input[i])) {
         return false
       }
     }
     return true
   }
-  // Guard record
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // Record
   if (typeof t === 'object' && t !== null) {
     if (typeof input !== 'object' || input === null) {
       return false
     }
     for (const k of Object.keys(t)) {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       if (!isTypeValid((t as GuardRecord)[k], (input as Record<PropertyKey, unknown>)[k])) {
         return false
       }
@@ -147,21 +139,21 @@ const createGuard = <T extends unknown>(orTypes: OrType[]) => {
   return guard
 }
 
-const createOr = <TPrev extends unknown>(orTypes: OrType[]) => <
+const createOr = <TPrev extends unknown>(prevOrTypes: OrType[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>> => {
-  orTypes.push(t)
+  const orTypes: OrType[] = [...prevOrTypes, t]
   return createGuard<TPrev | UnpackType<TNew>>(orTypes)
 }
 
-const createOrArray = <TPrev extends unknown>(orTypes: OrType[]) => <
+const createOrArray = <TPrev extends unknown>(prevOrTypes: OrType[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>[]> => {
-  orTypes.push([arrayMarker, t])
+  const orTypes: OrType[] = [...prevOrTypes, [arrayMarker, t]]
   return createGuard<TPrev | UnpackType<TNew>[]>(orTypes)
 }
 

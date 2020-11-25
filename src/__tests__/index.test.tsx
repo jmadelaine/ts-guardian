@@ -1,4 +1,4 @@
-import { is, isArray } from '.'
+import { is, isArray, isBoolean, isNumber, isString } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -130,6 +130,15 @@ describe('is', () => {
     expectGuard(guard, [1])
     expectGuard(guard, [2, 3, 4])
     expectGuard(guard, [5, '6', 7], false)
+  })
+  it.only('Does not mutate orTypes of extended guards', () => {
+    const guard = is('string')
+    expectGuard(is('string'), undefined, false)
+    expectGuard(guard, undefined, false)
+    // In v0.0.4 this would mutate guard's orTypes,
+    // meaning the next type check would return true
+    guard.or('undefined')
+    expectGuard(guard, undefined, false)
   })
 })
 
