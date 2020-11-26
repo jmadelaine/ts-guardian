@@ -1,5 +1,10 @@
 # Changelog
 
+[0.0.7] 2020-11-26
+
+- Rename `createParser` to `parserFor`
+- Rename `isArray` to `isArrayOf`
+
 [0.0.6] 2020-11-25
 
 - Add parsing support with `createParser`
