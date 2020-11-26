@@ -1,4 +1,4 @@
-import { is, isArray, createParser } from '..'
+import { is, isArrayOf, parserFor } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -124,7 +124,7 @@ describe('is', () => {
     expectGuard(numberOrStringGuard, '')
   })
   it("allows chaining 'orArray'", () => {
-    const guard = is('string').orArray('number')
+    const guard = is('string').orArrayOf('number')
     expectGuard(guard, '')
     expectGuard(guard, [])
     expectGuard(guard, [1])
@@ -142,12 +142,12 @@ describe('is', () => {
   })
 })
 
-describe('isArray', () => {
+describe('isArrayOf', () => {
   it('guards basic array types', () => {
     for (const t of basicTypes) {
       for (const k of basicValueKeys) {
         expectGuard(
-          isArray(t),
+          isArrayOf(t),
           [basicValues[k]],
           t === 'any' ||
             t === 'unknown' ||
@@ -161,11 +161,11 @@ describe('isArray', () => {
   })
   it('guards objects', () => {
     // Simple object
-    expectGuard(isArray({}), [{}])
+    expectGuard(isArrayOf({}), [{}])
 
     // Single basic prop
     expectGuard(
-      isArray({
+      isArrayOf({
         prop1: is('string'),
       }),
       [
@@ -176,7 +176,7 @@ describe('isArray', () => {
     )
   })
   it('allows guard chaining', () => {
-    const guard = isArray('boolean').or('null').orArray('number')
+    const guard = isArrayOf('boolean').or('null').orArrayOf('number')
     expectGuard(guard, [true, false])
     expectGuard(guard, null)
     expectGuard(guard, [0, 1, 2])
@@ -186,7 +186,7 @@ describe('isArray', () => {
     expectGuard(guard, 0, false)
   })
   it('allows guard of guards', () => {
-    const guard = isArray(is('boolean').or('number'))
+    const guard = isArrayOf(is('boolean').or('number'))
     expectGuard(guard, [true, false])
     expectGuard(guard, [0, 1, 2])
     expectGuard(guard, [])
@@ -199,28 +199,28 @@ describe('isArray', () => {
 describe('parser', () => {
   it('parses basic types', () => {
     const a = ''
-    expect(createParser(is('any'))(a)).toBe(a)
+    expect(parserFor(is('any'))(a)).toBe(a)
     const bo = true
-    expect(createParser(is('boolean'))(bo)).toBe(bo)
+    expect(parserFor(is('boolean'))(bo)).toBe(bo)
     const bi = BigInt(1)
-    expect(createParser(is('bigint'))(bi)).toBe(bi)
+    expect(parserFor(is('bigint'))(bi)).toBe(bi)
     const nul = null
-    expect(createParser(is('null'))(nul)).toBe(nul)
+    expect(parserFor(is('null'))(nul)).toBe(nul)
     const num = 0
-    expect(createParser(is('number'))(num)).toBe(num)
+    expect(parserFor(is('number'))(num)).toBe(num)
     const o = {}
-    expect(createParser(is('object'))(o)).toBe(o)
+    expect(parserFor(is('object'))(o)).toBe(o)
     const st = ''
-    expect(createParser(is('string'))(st)).toBe(st)
+    expect(parserFor(is('string'))(st)).toBe(st)
     const sy = Symbol()
-    expect(createParser(is('symbol'))(sy)).toBe(sy)
+    expect(parserFor(is('symbol'))(sy)).toBe(sy)
     const und = undefined
-    expect(createParser(is('undefined'))(und)).toBe(und)
+    expect(parserFor(is('undefined'))(und)).toBe(und)
     const unk = ''
-    expect(createParser(is('unknown'))(unk)).toBe(unk)
+    expect(parserFor(is('unknown'))(unk)).toBe(unk)
 
-    expect(createParser(is('number'))(st)).toBe(undefined)
-    expect(createParser(is('string'))(num)).toBe(undefined)
+    expect(parserFor(is('number'))(st)).toBe(undefined)
+    expect(parserFor(is('string'))(num)).toBe(undefined)
   })
   it('parses objects', () => {
     const o = {
@@ -236,7 +236,7 @@ describe('parser', () => {
       prop2: is('string'),
     })
 
-    expect(createParser(guardSuccess)(o)).toBe(o)
-    expect(createParser(guardFail)(o)).toBe(undefined)
+    expect(parserFor(guardSuccess)(o)).toBe(o)
+    expect(parserFor(guardFail)(o)).toBe(undefined)
   })
 })

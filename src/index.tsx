@@ -40,7 +40,7 @@ type Guard<T extends unknown> = ((input: unknown) => input is T) & {
   or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
     t: U
   ) => Guard<T | UnpackType<U>>
-  orArray: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+  orArrayOf: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
     t: U
   ) => Guard<T | UnpackType<U>[]>
 }
@@ -60,6 +60,8 @@ type UnpackType<T extends unknown> = T extends BasicType
   ? V
   : never
 
+type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
+
 const arrayMarker = 'every'
 
 const getBasicTypeGuard = (t: BasicType) => {
@@ -75,7 +77,6 @@ const getBasicTypeGuard = (t: BasicType) => {
     case 'number':
       return (v: unknown): v is number => typeof v === 'number'
     case 'object':
-      // eslint-disable-next-line @typescript-eslint/ban-types
       return (v: unknown): v is object => typeof v === 'object'
     case 'string':
       return (v: unknown): v is string => typeof v === 'string'
@@ -129,17 +130,17 @@ const isTypeValid = (t: OrType, input: unknown): boolean => {
   return false
 }
 
-const createGuard = <T extends unknown>(orTypes: OrType[]) => {
-  const guard: Guard<T> = (input: unknown): input is T =>
+const createGuard = <T extends any>(orTypes: OrType[]) => {
+  const guard: Guard<T> = (input: any): input is T =>
     orTypes.some(orType => {
       return isTypeValid(orType, input)
     })
   guard.or = createOr<T>(orTypes)
-  guard.orArray = createOrArray<T>(orTypes)
+  guard.orArrayOf = createOrArrayOf<T>(orTypes)
   return guard
 }
 
-const createOr = <TPrev extends unknown>(prevOrTypes: OrType[]) => <
+const createOr = <TPrev extends any>(prevOrTypes: OrType[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
@@ -148,7 +149,7 @@ const createOr = <TPrev extends unknown>(prevOrTypes: OrType[]) => <
   return createGuard<TPrev | UnpackType<TNew>>(orTypes)
 }
 
-const createOrArray = <TPrev extends unknown>(prevOrTypes: OrType[]) => <
+const createOrArrayOf = <TPrev extends any>(prevOrTypes: OrType[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
@@ -164,7 +165,7 @@ export const is = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   return createGuard<UnpackType<T>>(orTypes)
 }
 
-export const isArray = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
+export const isArrayOf = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>[]> => {
   const orTypes: OrType[] = [[arrayMarker, t]]
@@ -179,7 +180,6 @@ export const isObject = is('object')
 export const isString = is('string')
 export const isSymbol = is('symbol')
 export const isUndefined = is('undefined')
-
 export const isBooleanOrUndefined = isBoolean.or('undefined')
 export const isBigintOrUndefined = isBigint.or('undefined')
 export const isNullOrUndefined = isNull.or('undefined')
@@ -188,25 +188,18 @@ export const isObjectOrUndefined = isObject.or('undefined')
 export const isStringOrUndefined = isString.or('undefined')
 export const isSymbolOrUndefined = isSymbol.or('undefined')
 
-type PredicateType<TGuard extends unknown> = TGuard extends (inp: unknown) => inp is infer U
-  ? U
-  : never
-
-export const createParser = <
-  T extends unknown = undefined,
-  TGuard extends (input: unknown) => input is unknown = (input: unknown) => input is T
->(
+export const parserFor = <T extends any = undefined, TGuard extends Guard<any> = Guard<T>>(
   guard: TGuard
 ) => (
-  input: unknown
+  input: any
 ): T extends undefined
-  ? PredicateType<TGuard> | undefined
-  : PredicateType<TGuard> extends T
+  ? GuardType<TGuard> | undefined
+  : GuardType<TGuard> extends T
   ? T | undefined
   : never => {
   return (guard(input) ? input : undefined) as T extends undefined
-    ? PredicateType<TGuard> | undefined
-    : PredicateType<TGuard> extends T
+    ? GuardType<TGuard> | undefined
+    : GuardType<TGuard> extends T
     ? T | undefined
     : never
 }

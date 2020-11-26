@@ -3,130 +3,323 @@
 
 # ts-guardian
 
-## Introduction
+Functional, composable, reliable type guards! 👍
 
-Type guards you can trust! 👍
+There are already several great type guard packages, but `ts-guardian` takes it a step further - a functional approach to creating reliable, composable, type-safe type guards.
 
-TS Guardian uses the power of [TypeScript][typescript] and [functional programming][functional-programming] to protect your data types, so rest easy.
+<br />
+
+### Type guards?
+
+A type guard is a function that takes any value, and returns a boolean that determines if the value is compatible with a specified type.
+
+Type guards are used to confirm the structure of data. If your app deals with API responses, objects with optional members, or values that are unknown or change regularly, you'll benefit from `ts-guardian`.
+
+<br />
+
+### Core principles
+
+- **Concise, human-readable syntax** - Type definitions can be complex. `ts-guardian`'s syntax is minimal, declarative, and reads like a sentence.
+- **Composable** - Complex types are composed of a finite number of basic types. Similarly, type guards can be composed from other type guards due to `ts-guardian`'s functional approach.
+- **Full TypeScript support** - Guards will type matching values with an auto-generated type, defined by the type-checking process, which can be implicitly cast to a user-defined type while retaining type-safety.
+- **Reliable** - No false positives, no assumptions, and [no TypeScript type assertions or innacurate type predicates](#reliable-type-guards). `ts-guardian` is 100% type-safe.
 
 <br />
 
 ## Index
 
-- [Quick start](#quick-start)
 - [Installation](#installation)
+- [Usage](#usage)
+  - [The `is` function](#the-is-function)
+  - [Basic types](#basic-types)
+  - [Union types](#union-types)
+  - [Array types](#array-types)
+  - [Object types](#object-types)
+  - [Tuple types](#tuple-types)
+  - [User-defined types](#user-defined-types)
+  - [Composition](#composition)
+  - [Convenience guards](#convenience-guards)
 - [Reliable type guards](#reliable-type-guards)
-- [The `is` and `or` functions](#the-is-and-or-functions)
-- [The `isArray` and `orArray` functions](#the-is-array-and-or-array-functions)
-- [Basic guards](#basic-guards)
-- [Guard objects](#guard-objects)
-- [Guard tuples](#guard-tuples)
-- [Guard chaining](#guard-chaining)
-- [Guard composition](#guard-composition)
-- [Convenience guards](#convenience-guards)
-- [The `createParser` function](#the-createparser-function)
 
 <br />
 
-## Quick start
+## Installation
+
+```
+npm i ts-guardian
+```
+
+<br />
+
+## Usage
+
+### The `is` function
 
 ```ts
-// Import the `is` function
 import { is } from 'ts-guardian'
+```
 
-// We want to determine the type of `value` returned from `getSomeValue`
-const value = getSomeValue()
+Use `is` to create type guards. The `is` function takes a parameter that defines a type, and returns a guard for that type:
 
-//
-// Basic type guard
-//
+```ts
+const isString = is('string') // guard for 'string'
 
-const isString = is('string')
+isString('') // returns true
+isString(0) // returns false
+```
 
-if (isString(value)) {
-  // value is of type `string`
-  const lower = value.toLowerCase()
+<br />
+
+### Basic types
+
+Pass a type as a string to create guards for basic types:
+
+```ts
+const isBoolean = is('boolean') // guard for 'boolean'
+const isNull = is('null') // guard for 'null'
+```
+
+Basic types are the bread and butter of `ts-guardian`.
+
+Here's the complete set of keys:
+
+| Key           | Type        | Equivalent type check          |
+| ------------- | ----------- | ------------------------------ |
+| `'any'`       | `any`       | `true` (matches anything)      |
+| `'boolean'`   | `boolean`   | `typeof <value> === 'boolean'` |
+| `'bigint'`    | `bigint`    | `typeof <value> === 'bigint'`  |
+| `'null'`      | `null`      | `<value> === null`             |
+| `'number'`    | `number`    | `typeof <value> === 'number'`  |
+| `'object'`    | `object`    | `typeof <value> === 'object'`  |
+| `'string'`    | `string`    | `typeof <value> === 'string'`  |
+| `'symbol'`    | `symbol`    | `typeof <value> === 'symbol'`  |
+| `'undefined'` | `undefined` | `<value> === undefined`        |
+| `'unknown'`   | `unknown`   | `true` (matches anything)      |
+
+> When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you can specify part of the type as `any` or `unknown`, for example, an object member.
+
+<br />
+
+### Union types
+
+Every type guard has an `or` method which has the same signature as the `is` function. Use `or` to create union types:
+
+```ts
+const isStringOrNumber = is('string').or('number') // guard for 'string | number'
+
+isStringOrNumber('') // returns true
+isStringOrNumber(0) // returns true
+isStringOrNumber(true) // returns false
+```
+
+<br />
+
+### Array types
+
+To check that every element in an array is of a specific type, use the `isArrayOf` function, and the `orArrayOf` method:
+
+```ts
+import { is, isArrayOf } from 'ts-guardian'
+
+const isStrArr = isArrayOf('string') // guard for 'string[]'
+
+const isStrOrNumArr = isArrayOf(is('string').or('number')) // guard for '(string | number)[]'
+
+const isStrArrOrNumArr = isArrayOf('string').orArrayOf('number') // guard for 'string[] | number[]'
+
+const isStrArrOrUndefined = is('undefined').orArrayOf('string') // guard for 'string[] | undefined'
+```
+
+> Note the difference between `isArrayOf(is('string').or('number'))` which creates a guard for `(string | number)[]`, and `isArrayOf('string').orArrayOf('number')` which creates a guard for `string[] | number[]`.
+
+<br />
+
+### Object types
+
+The basic type guard for the `object` type (`is('object')`) should be used rarely, if at all, due to it matching on `null`.
+
+Instead, pass an object to `is`:
+
+```ts
+const isObject = is({}) // guard for '{}'
+
+isObject({ some: 'prop' }) // returns true
+isObject(null) // returns false
+```
+
+To create a guard for an object's members, define a guard for each object key:
+
+```ts
+const hasAge = is({ age: is('number') }) // guard for '{ age: number; }'
+
+hasAge({ name: 'Bob' }) // returns false
+hasAge({ name: 'Bob', age: 40 }) // returns true
+```
+
+<br />
+
+### Tuple types
+
+Guards for tuples are defined by passing an array to `is`:
+
+```ts
+const isStrNumTuple = is([is('string'), is('number')]) // guard for '[string, number]'
+
+isStrNumTuple(['hello']) // returns false
+isStrNumTuple(['hello', 5]) // returns true
+```
+
+<br />
+
+### User-defined types
+
+Consider the following type and its guard:
+
+```ts
+type Book = {
+  title: string
+  author: string
 }
 
-//
-// Multiple types
-//
-
-const isNullish = is('null').or('undefined')
-
-if (isNullish(value)) {
-  // value is of type `null | undefined`
-  throw new Error('missing value')
-}
-
-//
-// Composable
-//
-
-const isId = isString.or('number')
-
-if (isId(value)) {
-  // value is of type `string | number`
-  const id = value
-}
-
-//
-// Object type guards
-//
-
-const hasMessage = is({ message: is('string') })
-
-if (hasMessage(value)) {
-  // value is of type `{ message: string }`
-  const message = value.message
-}
-
-//
-// Tuple type guards
-//
-
-const isLabelledCoordinate = is([is('string'), is('number'), is('number')])
-
-if (isLabelledCoordinate(value)) {
-  // value is of type `[string, number, number]`
-  const [label, x, y] = value
-}
-
-//
-// Safe (no type predicates or assertions required)
-//
-
-type Contact = {
-  name: string
-  email: string | undefined
-  phone: string | number | undefined
-}
-
-const isStringOrUndefined = isString.or('undefined')
-
-const isContact = is({
-  name: isString,
-  email: isStringOrUndefined,
-  phone: isStringOrUndefined.or('number'),
+const isBook = is({
+  title: isString,
+  author: isString,
 })
+```
 
-if (isContact(value)) {
-  /* value is of type:
-      {
-        name: string;
-        email: string | undefined;
-        phone: string | number | undefined
-      }
-  */
-  const contact: Contact = value
+If `isBook` returns `true` for a value, that value will be the primitive-based type:
+
+```ts
+{
+  title: string
+  author: string
 }
 ```
+
+Ideally, we want to type the value as `Book`, while [avoiding type assertions and user-defined type predicates](#reliable-type-guards).
+
+One way is with a parse function that utilizes TypeScript's implicit casting:
+
+```ts
+const parseBook = (input: any): Book | undefined => {
+  return isBook(input) ? input : undefined
+}
+```
+
+TypeScript will complain if the type predicate returned from `isBook` is not compatible with the `Book` type. This function is type-safe, but defining these functions over and over is a little tedious.
+
+Instead, you can call the `parserFor` function:
+
+```ts
+import { parser } from 'ts-guardian'
+
+const parseBook = parserFor<Book>(isBook)
+```
+
+The `parserFor` function takes a guard, and returns a function you can use to parse values.
+
+This function acts in the same way as the previous `parseBook` function. It takes a value and passes it to the guard. If the guard matches, it returns the value typed as the supplied user-defined type. If the guard does not match, the function returns `undefined`:
+
+```ts
+const book = {
+  title: 'Odyssey',
+  author: 'Homer',
+}
+
+const film = {
+  title: 'Psycho',
+  director: 'Alfred Hitchcock',
+}
+
+parseBook(book) // returns book as type `Book`
+parseBook(film) // returns undefined
+```
+
+The `parserFor` function is also type-safe. TypeScript will complain if you try to create a parser for a user-defined type that isn't compatible with the supplied type guard:
+
+```ts
+const parseBook = parserFor<Book>(isBook) // Fine
+
+const parseBook = parserFor<Book>(isString) // TypeScript error - type 'string' is not assignable to type 'Book'
+```
+
+<br />
+
+### Composition
+
+Guards can be composed from existing guards:
+
+```ts
+const isString = is('string') // guard for 'string'
+const isStringOrUndefined = isString.or('undefined') // guard for 'string | undefined'
+```
+
+You can even pass guards into `or`:
+
+```ts
+const isStrOrNum = is('string').or('number') // guard for 'string | number'
+const isNullOrUndef = is('null').or('undefined') // guard for 'null | undefined'
+
+// guard for 'string | number | null | undefined'
+const isStrOrNumOrNullOrUndef = isStrOrNum.or(isNullOrUndef)
+```
+
+Go as crazy as you like:
+
+```ts
+const isStringOrUndefined = is('string').or('undefined')
+const isBooleanOrUndefined = is('boolean').or('undefined')
+const isNumberOrBigInt = is('number').or('bigint')
+
+/* guard for:
+{
+  a: string | number | bigint | undefined;
+  b: boolean | undefined;
+  c: {
+    d: [string | undefined, number];
+    e: any;
+  } | undefined;
+} | null>
+*/
+const isSomethingCrazy = is({
+  a: isNumberOrBigInt.or(isStringOrUndefined),
+  b: isBooleanOrUndefined,
+  c: is({
+    d: [isStringOrUndefined, is('number')],
+    e: is('any'),
+  }).or('undefined'),
+}).or('null')
+```
+
+<br />
+
+### Convenience guards
+
+There are a few simple guards you'll tend to use frequently. `ts-guardian` exports a bunch of pre-defined convenience guards to make things easier:
+
+| Guard                  | Type                                  | Equivalent to                   |
+| ---------------------- | ------------------------------------- | ------------------------------- |
+| `isBoolean`            | `boolean`                             | `is('boolean')`                 |
+| `isBooleanOrUndefined` | <code>boolean &#124; undefined</code> | `is('boolean').or('undefined')` |
+| `isBigint`             | `bigint`                              | `is('bigint')`                  |
+| `isBigintOrUndefined`  | <code>bigint &#124; undefined</code>  | `is('bigint').or('undefined')`  |
+| `isNull`               | `null`                                | `is('null')`                    |
+| `isNullOrUndefined`    | <code>null &#124; undefined</code>    | `is('null').or('undefined')`    |
+| `isNumber`             | `number`                              | `is('number')`                  |
+| `isNumberOrUndefined`  | <code>number &#124; undefined</code>  | `is('number').or('undefined')`  |
+| `isObject`             | `object`                              | `is('object')`                  |
+| `isObjectOrUndefined`  | <code>object &#124; undefined</code>  | `is('object').or('undefined')`  |
+| `isString`             | `string`                              | `is('string')`                  |
+| `isStringOrUndefined`  | <code>string &#124; undefined</code>  | `is('string').or('undefined')`  |
+| `isSymbol`             | `symbol`                              | `is('symbol')`                  |
+| `isSymbolOrUndefined`  | <code>symbol &#124; undefined</code>  | `is('symbol').or('undefined')`  |
+| `isUndefined`          | `undefined`                           | `is('undefined')`               |
 
 <br />
 
 ## Reliable type guards
 
-`ts-guardian` solves the problem of reliable type guards in a concise, composable, and human-readable way.
+`ts-guardian` provides type-safe type guards.
 
 Consider the following problem:
 
@@ -150,11 +343,11 @@ type User = {
 
 ### Solution 1 - User-defined type guards 👎
 
-With TypeScript's [user-defined type guards][user-defined-type-guards], we could write an `isUser` function to confirm a value is of type `User`. It would probably look something like this:
+With TypeScript's [user-defined type guards][user-defined-type-guards], we could write an `isUser` function to confirm the value is of type `User`. It would probably look something like this:
 
 ```ts
 // Returns user-defined type guard `input is User`
-const isUser = (input: unknown): input is User => {
+const isUser = (input: any): input is User => {
   const u = input as User
   return (
     typeof u === 'object' &&
@@ -169,11 +362,6 @@ const isUser = (input: unknown): input is User => {
       u.phone === undefined)
   )
 }
-
-// Returns `input` if considered of type `User` by `isUser`, otherwise returns `undefined`
-const parseUser = (input: unknown): User | undefined => {
-  return isUser(input) ? input : undefined
-}
 ```
 
 Not pretty, but it works!
@@ -183,14 +371,12 @@ Apart from being hard to read and harder to reason about, this function seems to
 Oh, but what if we did this instead:
 
 ```ts
-const isUser = (input: unknown): input is User => {
+const isUser = (input: any): input is User => {
   return typeof input === 'object'
 }
 ```
 
-Clearly this function is not enough to confirm that `input` is of type `User`, but TypeScript doesn't complain at all, because...
-
-_Type predicates are effectively type assertions._
+Clearly this function is not enough to confirm that `input` is of type `User`, but TypeScript doesn't complain at all, because _type predicates are effectively type assertions._
 
 By saying to TypeScript "if I return `true`, consider `input` to be of type `User`", we lose type safety, and introduce potential **runtime errors** into our app. 😫
 
@@ -202,30 +388,30 @@ Let's try something else...
 
 ### Solution 2 - Primitive-based type guards 👍
 
-The solution is simple:
-
-_We make no assumptions that the value is a user-defined type._
+The solution is that _we make no assumptions that the value is a user-defined type._
 
 Instead, we define a **primitive-based type** of what a `User` object looks like, and let TypeScript determine whether this **primitive-based type** is compatible with the `User` type:
 
 > A _primitive-based type_ is a type constructed from only primitve TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
 
 ```ts
-import { is } from 'ts-guardian'
+import { is, isNumber, isString, isStringOrUndefined, isUndefined } from 'ts-guardian'
 
 // We make no assumptions that the data is a user-defined type
 const isUser = is({
-  id: is('number'),
-  name: is('string'),
-  email: is('string').or('undefined'),
-  phone: is('undefined').or({
-    primary: is('string').or('undefined'),
-    secondary: is('string').or('undefined'),
+  id: isNumber,
+  name: isString,
+  email: isStringOrUndefined,
+  phone: isUndefined.or({
+    primary: isStringOrUndefined,
+    secondary: isStringOrUndefined,
   }),
 })
 ```
 
-Instead of `isUser` returning the type predicate `input is User`, it now returns a type predicate that gets auto-generated from our type checking, which in this case looks like:
+Not only is this much more readable, but instead of `isUser` returning the type predicate `input is User`, it now returns a primitive-based type predicate that gets auto-generated from our type checking, so it's 100% accurate.
+
+In this case, the type predicate looks like:
 
 ```ts
 // Type predicate for our primitive-based type
@@ -243,355 +429,13 @@ input is {
 It's now up to TypeScript to tell us if this type is compatible with the `User` type:
 
 ```ts
-// TypeScript complains if the primitive-based type is not compatible with User
-const parseUser = (input: unknown): User | undefined => {
-  return isUser(input) ? input : undefined
-}
+// TypeScript complains if the primitive-based type predicate is not compatible with 'User'
+const parseUser = parserFor<User>(isUser)
 ```
 
-In `parseUser`, if the type predicate from `isUser` is not compatible with the `User` type, then we get a TypeScript compiler error telling us this. 🎉
+Iff the type predicate from `isUser` is not compatible with the `User` type, then we get a TypeScript compiler error telling us this. 🎉
 
-Not only that, but the syntax is clean, concise, and readable. Double thumbs up! 👍 👍
-
-<br />
-
-## Installation
-
-```
-npm i ts-guardian
-```
-
-<br />
-
-## The `is` and `or` functions
-
-### `is`
-
-`ts-guardian` exports the `is` function, which is a curried function used to build type guards. The `is` function takes a parameter used to define a type, and returns a type guard for that type:
-
-```ts
-// The `is` function looks something like this:
-const is = t => input => boolean
-```
-
-Parameter `t` is used to define the type definition for the guard.
-
-The returned function `input => boolean` is the type guard itself, returning `true` if the `input` parameter satisfies the type definition for the guard:
-
-```ts
-import { is } from 'ts-guardian'
-
-const data = getFromApi() // data is of type `unknown`
-
-// Type guard for `string`
-const isString = is('string')
-
-if (isString(data)) {
-  // data is of type `string`
-} else {
-  // data must be some other type
-}
-```
-
-### `or`
-
-`ts-guardian` wouldn't be useful unless we could define multiple types for the same value. The `is` function has an `or` method, which works in the same way:
-
-```ts
-import { is } from 'ts-guardian'
-
-const data = getFromApi() // data is of type `unknown`
-
-// Type guard for `string | number`
-const isStringOrNumber = is('string').or('number')
-
-if (isStringOrNumber(data)) {
-  // data is of type `string | number`
-} else {
-  // data must be some other type
-}
-```
-
-<br />
-
-## Basic guards
-
-Basic type guards are defined by passing a string key representing the guard type, into the `is` and `or` functions:
-
-```ts
-// Type guard for `string`
-const isString = is('string')
-
-isString(5) // returns false
-isString('hello') // returns true
-
-// Type guard for `string | number`
-const isStringOrNumber = is('string').or('number')
-
-isStringOrNumber(5) // returns true
-isStringOrNumber('hello') // returns true
-```
-
-Basic type guards are the bread and butter of `ts-guardian` and are used as building blocks to form more complex type guards.
-
-Here's the complete set of keys:
-
-| Key           | Type of guard | Equivalent type check          |
-| ------------- | ------------- | ------------------------------ |
-| `'any'`       | `any`         | `true` (matches anything)      |
-| `'boolean'`   | `boolean`     | `typeof <value> === 'boolean'` |
-| `'bigint'`    | `bigint`      | `typeof <value> === 'bigint'`  |
-| `'null'`      | `null`        | `<value> === null`             |
-| `'number'`    | `number`      | `typeof <value> === 'number'`  |
-| `'object'`    | `object`      | `typeof <value> === 'object'`  |
-| `'string'`    | `string`      | `typeof <value> === 'string'`  |
-| `'symbol'`    | `symbol`      | `typeof <value> === 'symbol'`  |
-| `'undefined'` | `undefined`   | `<value> === undefined`        |
-| `'unknown'`   | `unknown`     | `true` (matches anything)      |
-
-> When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you want to specify part of the type as `any` or `unknown`, for example, an object member.
-
-<br />
-
-## The `isArray` and `orArray` functions
-
-Similar to `is` and `or`, but the passed types will be used to type the elements of an array:
-
-```ts
-import { is } from 'ts-guardian'
-
-const data = getFromApi() // data is of type `unknown`
-
-// Type guard for `string[]`
-const isStringArray = isArray('string')
-
-// Type guard for `(string | number)[]`
-const isStringOrNumberArray = isArray(is('string').or('number'))
-
-// Type guard for `string[] | number[]`
-const isStringArrayOrNumberArray = isArray('string').orArray('number')
-
-// Type guard for `string[] | undefined
-const isStringArrayOrUndefined = is('undefined').orArray('string')
-```
-
-> Note the difference between `isArray(is('string').or('number'))` which produces a guard for `(string | number)[]`, and `isArray('string').orArray('number')` which creates a guard for `string[] | number[]`.
-
-<br />
-
-## Guard objects
-
-The basic type guard for the `object` type (`is('object')`) should be used rarely, if at all, due to it matching on `null`.
-
-When dealing with objects, prefer using a **guard object** instead:
-
-```ts
-// Type guard for `{}`
-const isObject = is({})
-
-isObject('hello') // returns false
-isObject({ name: 'Bob' }) // returns true
-
-// Type guard for `{ age: number; }`
-const hasAge = is({ age: is('number') })
-
-hasAge({ name: 'Bob' }) // returns false
-hasAge({ name: 'Bob', age: 40 }) // returns true
-```
-
-<br />
-
-## Guard tuples
-
-To define a tuple type guard, pass in an array containing guards for each element of the tuple:
-
-```ts
-// Type guard for `[string, number]`
-const isTuple = is([is('string'), is('number')])
-
-isTuple(['hello']) // returns false
-isTuple(['hello', 5]) // returns true
-```
-
-<br />
-
-## Guard chaining
-
-`ts-guardian` uses currying, which means you can chain as many guards together as you like:
-
-```ts
-const isMySuperComplexType = is({
-  prop1: is('string').or('number').or('undefined'),
-  prop2: is('boolean').or('undefined'),
-  prop3: is({
-    propA: is('string').or('undefined'),
-    propB: is('bigint'),
-    propC: is('any'),
-  }).or('null'),
-}).or('undefined')
-```
-
-which results in the type guard:
-
-```ts
-input is {
-    prop1: string | number | undefined;
-    prop2: boolean | undefined;
-    prop3: {
-        propA: string | undefined;
-        propB: bigint;
-        propC: any;
-    } | null;
-} | undefined
-```
-
-Go crazy!
-
-<br />
-
-## Guard composition
-
-Guards can be created and reused in other guards:
-
-```ts
-// Type guard for `string`
-const isString = is('string')
-
-// Type guard for `string | undefined`
-const isStringOrUndefined = isString.or('undefined')
-
-// Super composable
-const isUser = is({
-  id: isString.or('number'),
-  name: isString,
-  email: isStringOrUndefined,
-})
-```
-
-Guards can even be passed to the `or` function:
-
-```ts
-// Type guard for `number | undefined`
-const isNumberOrUndefined = is('number').or('undefined')
-// Type guard for `string | null`
-const isStringOrNull = is('string').or('null')
-
-// Type guard for `string | number | null | undefined`
-const isStringNumberUndefinedOrNull = isStringOrNull.or(isNumberOrUndefined)
-```
-
-<br />
-
-## Convenience guards
-
-From the examples, you probably noticed we repeatedly defined guards for some common types.
-
-Luckily, `ts-guardian` also exports a bunch of pre-defined convenience guards for these types:
-
-| Guard                  | Type of guard                         | Equivalent `is` function        |
-| ---------------------- | ------------------------------------- | ------------------------------- |
-| `isBoolean`            | `boolean`                             | `is('boolean')`                 |
-| `isBooleanOrUndefined` | <code>boolean &#124; undefined</code> | `is('boolean').or('undefined')` |
-| `isBigint`             | `bigint`                              | `is('bigint')`                  |
-| `isBigintOrUndefined`  | <code>bigint &#124; undefined</code>  | `is('bigint').or('undefined')`  |
-| `isNull`               | `null`                                | `is('null')`                    |
-| `isNullOrUndefined`    | <code>null &#124; undefined</code>    | `is('null').or('undefined')`    |
-| `isNumber`             | `number`                              | `is('number')`                  |
-| `isNumberOrUndefined`  | <code>number &#124; undefined</code>  | `is('number').or('undefined')`  |
-| `isObject`             | `object`                              | `is('object')`                  |
-| `isObjectOrUndefined`  | <code>object &#124; undefined</code>  | `is('object').or('undefined')`  |
-| `isString`             | `string`                              | `is('string')`                  |
-| `isStringOrUndefined`  | <code>string &#124; undefined</code>  | `is('string').or('undefined')`  |
-| `isSymbol`             | `symbol`                              | `is('symbol')`                  |
-| `isSymbolOrUndefined`  | <code>symbol &#124; undefined</code>  | `is('symbol').or('undefined')`  |
-| `isUndefined`          | `undefined`                           | `is('undefined')`               |
-
-This makes our code even cleaner.
-
-Going back to the original `isUser` function and implementing convenience guards would look like:
-
-```ts
-import { is, isNumber, isString, isStringOrUndefined, isUndefined } from 'ts-guardian'
-
-const isUser = is({
-  id: isNumber,
-  name: isString,
-  email: isStringOrUndefined,
-  phone: isUndefined.or({
-    primary: isStringOrUndefined,
-    secondary: isStringOrUndefined,
-  }),
-})
-```
-
-Nice!
-
-<br />
-
-## The `createParser` function
-
-Consider the following type and its guard:
-
-```ts
-type Book = {
-  title: string
-  author: string
-}
-
-const isBook = is({
-  title: isString,
-  author: isString,
-})
-```
-
-When testing an unkown value, if the type is compatible, most of the time you'll want to type that value as a user-defined type and not just the primitive-based type returned from the type guard.
-
-If the type of the unknown value is not compatible with the user-defiend type, you might want to throw an error or return `undefined`.
-
-One way of doing that is with a parse function:
-
-```ts
-const parseBook = (input: unknown): Book | undefined => {
-  return isBook(input) ? input : undefined
-}
-```
-
-The great thing about this function is that it's type-safe. TypeScript complains if the type predicate returned from `isBook` is not compatible with the `Book` type. Great, but writing this function over and over again gets a little tedious.
-
-Instead, you can call the `createParser` function:
-
-```ts
-import { createParser } from 'ts-guardian'
-
-const parseBook = createParser<Book>(isBook)
-```
-
-The `createParser` function takes a guard, and returns a function that you can use to parse values.
-
-The returned function performs exactly as the previous `parseBook` function does. It takes a value to parse, and if the guard passes, will return the value typed as the supplied user-defined type. If the guard does not pass, the function returns `undefined`:
-
-```ts
-const book = {
-  title: 'Odyssey',
-  author: 'Homer',
-}
-
-const film = {
-  title: 'Psycho',
-  director: 'Alfred Hitchcock',
-}
-
-parseBook(book) // returns book as type `Book`
-parseBook(film) // returns undefined
-```
-
-The `createParser` function is also type-safe. TypeScript will complain if you try to create a parser for a user-defined type that isn't compatible with the supplied type guard:
-
-```ts
-const parseBook = createParser<Book>(isBook) // Fine
-
-const parseBook = createParser<Book>(isString) // TypeScript error - type 'string' is not assignable to type 'Book'
-```
+Not only that, but the syntax is clean, concise, and readable. Nice! 😎
 
 <br />
 
