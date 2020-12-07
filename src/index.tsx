@@ -32,8 +32,10 @@ type UnpackBasicType<T extends BasicType> = T extends 'any'
   ? unknown
   : never
 
+type LiteralType = string | number | boolean
+type WrappedLiteralType = ['l', LiteralType]
+type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<any>]
 interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
-
 type GuardTuple = [] | (GuardRecord | Guard<any>)[]
 
 type Guard<T extends unknown> = ((input: unknown) => input is T) & {
@@ -43,17 +45,21 @@ type Guard<T extends unknown> = ((input: unknown) => input is T) & {
   orArrayOf: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
     t: U
   ) => Guard<T | UnpackType<U>[]>
+  orLiterally: <U extends LiteralType>(t: U) => Guard<T | UnpackType<U>>
 }
 
 type OrType =
   | BasicType
+  | WrappedLiteralType
+  | EveryArrayElementType
   | GuardRecord
   | GuardTuple
   | Guard<any>
-  | ['every', BasicType | GuardRecord | GuardTuple | Guard<any>]
 
 type UnpackType<T extends unknown> = T extends BasicType
   ? UnpackBasicType<T>
+  : T extends LiteralType
+  ? T
   : T extends GuardRecord | GuardTuple
   ? { [key in keyof T]: UnpackType<T[key]> }
   : T extends Guard<infer V>
@@ -62,7 +68,8 @@ type UnpackType<T extends unknown> = T extends BasicType
 
 type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
 
-const arrayMarker = 'every'
+const arrayMarker = 'a'
+const literalMarker = 'l'
 
 const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
@@ -98,8 +105,12 @@ const isTypeValid = (t: OrType, input: unknown): boolean => {
   if (typeof t === 'function') {
     return t(input)
   }
-  // Array or Tuple
+  // Literal or Array or Tuple
   if (Array.isArray(t)) {
+    // Literal
+    if (t[0] === literalMarker) {
+      return input === t[1]
+    }
     if (!Array.isArray(input)) {
       return false
     }
@@ -137,6 +148,7 @@ const createGuard = <T extends any>(orTypes: OrType[]) => {
     })
   guard.or = createOr<T>(orTypes)
   guard.orArrayOf = createOrArrayOf<T>(orTypes)
+  guard.orLiterally = createOrLiterally<T>(orTypes)
   return guard
 }
 
@@ -158,6 +170,13 @@ const createOrArrayOf = <TPrev extends any>(prevOrTypes: OrType[]) => <
   return createGuard<TPrev | UnpackType<TNew>[]>(orTypes)
 }
 
+const createOrLiterally = <TPrev extends any>(prevOrTypes: OrType[]) => <TNew extends LiteralType>(
+  t: TNew
+): Guard<TPrev | UnpackType<TNew>> => {
+  const orTypes: OrType[] = [...prevOrTypes, [literalMarker, t]]
+  return createGuard<TPrev | UnpackType<TNew>>(orTypes)
+}
+
 export const is = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>> => {
@@ -170,6 +189,11 @@ export const isArrayOf = <T extends BasicType | GuardRecord | GuardTuple | Guard
 ): Guard<UnpackType<T>[]> => {
   const orTypes: OrType[] = [[arrayMarker, t]]
   return createGuard<UnpackType<T>[]>(orTypes)
+}
+
+export const isLiterally = <T extends LiteralType>(t: T): Guard<UnpackType<T>> => {
+  const orTypes: OrType[] = [[literalMarker, t]]
+  return createGuard<UnpackType<T>>(orTypes)
 }
 
 export const isBoolean = is('boolean')

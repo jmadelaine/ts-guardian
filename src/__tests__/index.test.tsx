@@ -1,4 +1,4 @@
-import { is, isArrayOf, parserFor } from '..'
+import { is, isArrayOf, isLiterally, parserFor } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -238,5 +238,23 @@ describe('parser', () => {
 
     expect(parserFor(guardSuccess)(o)).toBe(o)
     expect(parserFor(guardFail)(o)).toBe(undefined)
+  })
+})
+
+describe('isLiterally', () => {
+  it('handles strings', () => {
+    expectGuard(isLiterally('hello'), 'hello')
+    expectGuard(isLiterally('hello'), 'cool', false)
+    expectGuard(isLiterally('hello').orLiterally('cool'), 'hello')
+    expectGuard(isLiterally('hello').orLiterally('cool'), 'cool')
+    expectGuard(isLiterally('hello').orLiterally('cool'), 'nope', false)
+  })
+  it('handles numbers', () => {
+    expectGuard(isLiterally(5), 5)
+    expectGuard(isLiterally(5), 6, false)
+  })
+  it('handles booleans', () => {
+    expectGuard(isLiterally(true), true)
+    expectGuard(isLiterally(true), false, false)
   })
 })
