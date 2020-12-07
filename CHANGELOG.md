@@ -1,5 +1,10 @@
 # Changelog
 
+[0.0.8] 2020-12-07
+
+- Add `is_OrNull` helpers
+- Add literal type support with `isLiterally` and `orLiterally`
+
 [0.0.7] 2020-11-26
 
 - Rename `createParser` to `parserFor`
