@@ -33,6 +33,7 @@ Type guards are used to confirm the structure of data. If your app deals with AP
   - [The `is` function](#the-is-function)
   - [Basic types](#basic-types)
   - [Union types](#union-types)
+  - [Literal types](#literal-types)
   - [Array types](#array-types)
   - [Object types](#object-types)
   - [Tuple types](#tuple-types)
@@ -110,6 +111,19 @@ const isStringOrNumber = is('string').or('number') // guard for 'string | number
 isStringOrNumber('') // returns true
 isStringOrNumber(0) // returns true
 isStringOrNumber(true) // returns false
+```
+
+<br />
+
+### Literal types
+
+Pass a `number`, `string`, or `boolean` to `isLiterally` and `orLiterally` to create guards for literal types:
+
+```ts
+const isCool = isLiterally('cool') // guard for '"cool"'
+const is5 = isLiterally(5) // guard for '5'
+const isTrue = isLiterally(true) // guard for 'true'
+const is1OrTrue = isLiterally(1).orLiterally(true) // guard for '1 | true'
 ```
 
 <br />
@@ -300,18 +314,24 @@ There are a few simple guards you'll tend to use frequently. `ts-guardian` expor
 | Guard                  | Type                                  | Equivalent to                   |
 | ---------------------- | ------------------------------------- | ------------------------------- |
 | `isBoolean`            | `boolean`                             | `is('boolean')`                 |
+| `isBooleanOrNull`      | <code>boolean &#124; null</code>      | `is('boolean').or('null')`      |
 | `isBooleanOrUndefined` | <code>boolean &#124; undefined</code> | `is('boolean').or('undefined')` |
 | `isBigint`             | `bigint`                              | `is('bigint')`                  |
+| `isBigintOrNull`       | <code>bigint &#124; null</code>       | `is('bigint').or('null')`       |
 | `isBigintOrUndefined`  | <code>bigint &#124; undefined</code>  | `is('bigint').or('undefined')`  |
 | `isNull`               | `null`                                | `is('null')`                    |
 | `isNullOrUndefined`    | <code>null &#124; undefined</code>    | `is('null').or('undefined')`    |
 | `isNumber`             | `number`                              | `is('number')`                  |
+| `isNumberOrNull`       | <code>number &#124; null</code>       | `is('number').or('null')`       |
 | `isNumberOrUndefined`  | <code>number &#124; undefined</code>  | `is('number').or('undefined')`  |
 | `isObject`             | `object`                              | `is('object')`                  |
+| `isObjectOrNull`       | <code>object &#124; null</code>       | `is('object').or('null')`       |
 | `isObjectOrUndefined`  | <code>object &#124; undefined</code>  | `is('object').or('undefined')`  |
 | `isString`             | `string`                              | `is('string')`                  |
+| `isStringOrNull`       | <code>string &#124; null</code>       | `is('string').or('null')`       |
 | `isStringOrUndefined`  | <code>string &#124; undefined</code>  | `is('string').or('undefined')`  |
 | `isSymbol`             | `symbol`                              | `is('symbol')`                  |
+| `isSymbolOrNull`       | <code>symbol &#124; null</code>       | `is('symbol').or('null')`       |
 | `isSymbolOrUndefined`  | <code>symbol &#124; undefined</code>  | `is('symbol').or('undefined')`  |
 | `isUndefined`          | `undefined`                           | `is('undefined')`               |
 
