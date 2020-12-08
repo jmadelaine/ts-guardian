@@ -1,34 +1,34 @@
 type BasicType =
-  | 'any'
-  | 'boolean'
-  | 'bigint'
-  | 'null'
-  | 'number'
-  | 'object'
-  | 'string'
-  | 'symbol'
-  | 'undefined'
-  | 'unknown'
+  | `any`
+  | `boolean`
+  | `bigint`
+  | `null`
+  | `number`
+  | `object`
+  | `string`
+  | `symbol`
+  | `undefined`
+  | `unknown`
 
-type UnpackBasicType<T extends BasicType> = T extends 'any'
+type UnpackBasicType<T extends BasicType> = T extends `any`
   ? any
-  : T extends 'boolean'
+  : T extends `boolean`
   ? boolean
-  : T extends 'bigint'
+  : T extends `bigint`
   ? bigint
-  : T extends 'null'
+  : T extends `null`
   ? null
-  : T extends 'number'
+  : T extends `number`
   ? number
-  : T extends 'object'
+  : T extends `object`
   ? object
-  : T extends 'string'
+  : T extends `string`
   ? string
-  : T extends 'symbol'
+  : T extends `symbol`
   ? symbol
-  : T extends 'undefined'
+  : T extends `undefined`
   ? undefined
-  : T extends 'unknown'
+  : T extends `unknown`
   ? unknown
   : never
 
@@ -38,7 +38,7 @@ type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<
 interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
 type GuardTuple = [] | (GuardRecord | Guard<any>)[]
 
-type Guard<T extends unknown> = ((input: unknown) => input is T) & {
+type Guard<T extends unknown> = ((value: unknown) => value is T) & {
   or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
     t: U
   ) => Guard<T | UnpackType<U>>
@@ -68,71 +68,71 @@ type UnpackType<T extends unknown> = T extends BasicType
 
 type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
 
-const arrayMarker = 'a'
-const literalMarker = 'l'
+const arrayMarker = `a`
+const literalMarker = `l`
 
 const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
-    case 'any':
+    case `any`:
       return (_: unknown): _ is any => true
-    case 'boolean':
-      return (v: unknown): v is boolean => typeof v === 'boolean'
-    case 'bigint':
-      return (v: unknown): v is bigint => typeof v === 'bigint'
-    case 'null':
+    case `boolean`:
+      return (v: unknown): v is boolean => typeof v === `boolean`
+    case `bigint`:
+      return (v: unknown): v is bigint => typeof v === `bigint`
+    case `null`:
       return (v: unknown): v is null => v === null
-    case 'number':
-      return (v: unknown): v is number => typeof v === 'number'
-    case 'object':
-      return (v: unknown): v is object => typeof v === 'object'
-    case 'string':
-      return (v: unknown): v is string => typeof v === 'string'
-    case 'symbol':
-      return (v: unknown): v is symbol => typeof v === 'symbol'
-    case 'undefined':
+    case `number`:
+      return (v: unknown): v is number => typeof v === `number`
+    case `object`:
+      return (v: unknown): v is object => typeof v === `object`
+    case `string`:
+      return (v: unknown): v is string => typeof v === `string`
+    case `symbol`:
+      return (v: unknown): v is symbol => typeof v === `symbol`
+    case `undefined`:
       return (v: unknown): v is undefined => v === undefined
-    case 'unknown':
+    case `unknown`:
       return (_: unknown): _ is unknown => true
   }
 }
 
-const isTypeValid = (t: OrType, input: unknown): boolean => {
+const isTypeValid = (t: OrType, value: unknown): boolean => {
   // Basic type
-  if (typeof t === 'string') {
-    return getBasicTypeGuard(t)(input)
+  if (typeof t === `string`) {
+    return getBasicTypeGuard(t)(value)
   }
   // Guard
-  if (typeof t === 'function') {
-    return t(input)
+  if (typeof t === `function`) {
+    return t(value)
   }
   // Literal or Array or Tuple
   if (Array.isArray(t)) {
     // Literal
     if (t[0] === literalMarker) {
-      return input === t[1]
+      return value === t[1]
     }
-    if (!Array.isArray(input)) {
+    if (!Array.isArray(value)) {
       return false
     }
     // Array
     if (t[0] === arrayMarker) {
-      return input.every(el => isTypeValid(t[1]!, el))
+      return value.every(el => isTypeValid(t[1]!, el))
     }
     // Tuple
     for (let i = 0; i < t.length; ++i) {
-      if (!isTypeValid((t as any[])[i], input[i])) {
+      if (!isTypeValid((t as any[])[i], value[i])) {
         return false
       }
     }
     return true
   }
   // Record
-  if (typeof t === 'object' && t !== null) {
-    if (typeof input !== 'object' || input === null) {
+  if (typeof t === `object` && t !== null) {
+    if (typeof value !== `object` || value === null) {
       return false
     }
     for (const k of Object.keys(t)) {
-      if (!isTypeValid((t as GuardRecord)[k], (input as Record<PropertyKey, unknown>)[k])) {
+      if (!isTypeValid((t as GuardRecord)[k], (value as Record<PropertyKey, unknown>)[k])) {
         return false
       }
     }
@@ -141,11 +141,55 @@ const isTypeValid = (t: OrType, input: unknown): boolean => {
   return false
 }
 
+const createNameFromTypes = (orTypes: OrType[]) => {
+  let name = ``
+
+  for (let i = 0; i < orTypes.length; ++i) {
+    if (i > 0) {
+      name += ` | `
+    }
+
+    const t = orTypes[i]
+    // Basic type
+    if (typeof t === `string`) {
+      name += t
+    }
+    // Guard
+    else if (typeof t === `function`) {
+      name += t.name.slice(6, -1)
+    }
+    // Literal or Array or Tuple
+    else if (Array.isArray(t)) {
+      // Literal
+      if (t[0] === literalMarker) {
+        name += typeof t[1] === `string` ? `"${t[1]}"` : t[1]
+      }
+      // Array
+      else if (t[0] === arrayMarker) {
+        const elTypeNames = createNameFromTypes([t[1]]).slice(6, -1)
+        const useParentheses = elTypeNames.includes(`|`)
+        name += `${useParentheses ? `(` : ``}${elTypeNames}${useParentheses ? `)` : ``}[]`
+      }
+      // Tuple
+      else {
+        name += `[` + t.map(el => createNameFromTypes([el]).slice(6, -1)).join(`, `) + `]`
+      }
+    }
+    // Record
+    else {
+      name += `{}`
+    }
+  }
+
+  return `Guard<${name}>`
+}
+
 const createGuard = <T extends any>(orTypes: OrType[]) => {
-  const guard: Guard<T> = (input: any): input is T =>
+  const guard: Guard<T> = (value: any): value is T =>
     orTypes.some(orType => {
-      return isTypeValid(orType, input)
+      return isTypeValid(orType, value)
     })
+  Object.defineProperty(guard, `name`, { value: createNameFromTypes(orTypes) })
   guard.or = createOr<T>(orTypes)
   guard.orArrayOf = createOrArrayOf<T>(orTypes)
   guard.orLiterally = createOrLiterally<T>(orTypes)
@@ -196,40 +240,53 @@ export const isLiterally = <T extends LiteralType>(t: T): Guard<UnpackType<T>> =
   return createGuard<UnpackType<T>>(orTypes)
 }
 
-export const isBoolean = is('boolean')
-export const isBigint = is('bigint')
-export const isNull = is('null')
-export const isNumber = is('number')
-export const isObject = is('object')
-export const isString = is('string')
-export const isSymbol = is('symbol')
-export const isUndefined = is('undefined')
-export const isBooleanOrNull = isBoolean.or('null')
-export const isBigintOrNull = isBigint.or('null')
-export const isNumberOrNull = isNumber.or('null')
-export const isObjectOrNull = isObject.or('null')
-export const isStringOrNull = isString.or('null')
-export const isSymbolOrNull = isSymbol.or('null')
-export const isBooleanOrUndefined = isBoolean.or('undefined')
-export const isBigintOrUndefined = isBigint.or('undefined')
-export const isNumberOrUndefined = isNumber.or('undefined')
-export const isObjectOrUndefined = isObject.or('undefined')
-export const isStringOrUndefined = isString.or('undefined')
-export const isSymbolOrUndefined = isSymbol.or('undefined')
-export const isNullOrUndefined = isNull.or('undefined')
+export const isBoolean = is(`boolean`)
+export const isBigint = is(`bigint`)
+export const isNull = is(`null`)
+export const isNumber = is(`number`)
+export const isObject = is(`object`)
+export const isString = is(`string`)
+export const isSymbol = is(`symbol`)
+export const isUndefined = is(`undefined`)
+export const isBooleanOrNull = isBoolean.or(`null`)
+export const isBigintOrNull = isBigint.or(`null`)
+export const isNumberOrNull = isNumber.or(`null`)
+export const isObjectOrNull = isObject.or(`null`)
+export const isStringOrNull = isString.or(`null`)
+export const isSymbolOrNull = isSymbol.or(`null`)
+export const isBooleanOrUndefined = isBoolean.or(`undefined`)
+export const isBigintOrUndefined = isBigint.or(`undefined`)
+export const isNumberOrUndefined = isNumber.or(`undefined`)
+export const isObjectOrUndefined = isObject.or(`undefined`)
+export const isStringOrUndefined = isString.or(`undefined`)
+export const isSymbolOrUndefined = isSymbol.or(`undefined`)
+export const isNullOrUndefined = isNull.or(`undefined`)
 
 export const parserFor = <T extends any = undefined, TGuard extends Guard<any> = Guard<T>>(
   guard: TGuard
 ) => (
-  input: any
+  value: any
 ): T extends undefined
   ? GuardType<TGuard> | undefined
   : GuardType<TGuard> extends T
   ? T | undefined
   : never => {
-  return (guard(input) ? input : undefined) as T extends undefined
+  return (guard(value) ? value : undefined) as T extends undefined
     ? GuardType<TGuard> | undefined
     : GuardType<TGuard> extends T
     ? T | undefined
     : never
+}
+
+export const assertThat: <T extends any>(
+  value: any,
+  guard: Guard<T>,
+  errorMessage?: string
+) => asserts value is T = <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => {
+  if (!guard(value)) {
+    throw new Error(
+      errorMessage ??
+        `Type of '${value?.name ?? String(value)}' does not match type guard '${guard.name}'.`
+    )
+  }
 }

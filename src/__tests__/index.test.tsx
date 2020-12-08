@@ -1,4 +1,4 @@
-import { is, isArrayOf, isLiterally, parserFor } from '..'
+import { assertThat, is, isArrayOf, isLiterally, parserFor } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -257,4 +257,48 @@ describe('isLiterally', () => {
     expectGuard(isLiterally(true), true)
     expectGuard(isLiterally(true), false, false)
   })
+})
+
+describe('assertThat', () => {
+  it('asserts types', () => {
+    const isString = is('string')
+    expect(() => assertThat(5, isString)).toThrowError(
+      "Type of '5' does not match type guard 'Guard<string>'."
+    )
+    const isNumber = is('number')
+    expect(() => assertThat(5, isNumber)).not.toThrow()
+  })
+})
+
+it('has descriptive guard names', () => {
+  expect(is('any').name).toBe('Guard<any>')
+  expect(is('boolean').name).toBe('Guard<boolean>')
+  expect(is('bigint').name).toBe('Guard<bigint>')
+  expect(is('null').name).toBe('Guard<null>')
+  expect(is('number').name).toBe('Guard<number>')
+  expect(is('object').name).toBe('Guard<object>')
+  expect(is('string').name).toBe('Guard<string>')
+  expect(is('symbol').name).toBe('Guard<symbol>')
+  expect(is('undefined').name).toBe('Guard<undefined>')
+  expect(is('unknown').name).toBe('Guard<unknown>')
+  expect(is('string').or('number').name).toBe('Guard<string | number>')
+
+  expect(isLiterally('hello').name).toBe('Guard<"hello">')
+  expect(isLiterally(5).name).toBe('Guard<5>')
+  expect(isLiterally(true).name).toBe('Guard<true>')
+
+  expect(isArrayOf('string').or('number').name).toBe('Guard<string[] | number>')
+  expect(isArrayOf('string').orArrayOf('number').name).toBe('Guard<string[] | number[]>')
+  expect(isArrayOf(is('string').or('number')).name).toBe('Guard<(string | number)[]>')
+
+  expect(is([is('string')]).name).toBe('Guard<[string]>')
+  expect(is([is('string'), is('number')]).name).toBe('Guard<[string, number]>')
+  expect(is([isArrayOf('string').or([is('boolean')]), is('number')]).name).toBe(
+    'Guard<[string[] | [boolean], number]>'
+  )
+
+  expect(is({}).name).toBe('Guard<{}>')
+
+  // TODO: Names guards based on object member guards, i.e. Guard<{ something: string; }>
+  expect(is({ something: is('string') }).name).toBe('Guard<{}>')
 })
