@@ -22,7 +22,7 @@ Type guards are used to confirm the structure of data. If your app deals with AP
 - **Concise, human-readable syntax** - Type definitions can be complex. `ts-guardian`'s syntax is minimal, declarative, and reads like a sentence.
 - **Composable** - Complex types are composed of a finite number of basic types. Similarly, type guards can be composed from other type guards due to `ts-guardian`'s functional approach.
 - **Full TypeScript support** - Guards will type matching values with an auto-generated type, defined by the type-checking process, which can be implicitly cast to a user-defined type while retaining type-safety.
-- **Reliable** - No false positives, no assumptions, and [no TypeScript type assertions or innacurate type predicates](#reliable-type-guards). `ts-guardian` is 100% type-safe.
+- **Reliable** - No false positives, no assumptions, and [no TypeScript type assertions or inaccurate type predicates](#reliable-type-guards). `ts-guardian` is 100% type-safe.
 
 <br />
 
@@ -39,6 +39,7 @@ Type guards are used to confirm the structure of data. If your app deals with AP
   - [Tuple types](#tuple-types)
   - [User-defined types](#user-defined-types)
   - [Composition](#composition)
+  - [Assertion](#assertion)
   - [Convenience guards](#convenience-guards)
 - [Reliable type guards](#reliable-type-guards)
 
@@ -117,9 +118,11 @@ isStringOrNumber(true) // returns false
 
 ### Literal types
 
-Pass a `number`, `string`, or `boolean` to `isLiterally` and `orLiterally` to create guards for literal types:
+Pass a `number`, `string`, or `boolean` to the `isLiterally` function and the `orLiterally` method to create guards for literal types:
 
 ```ts
+import { isLiterally } from 'ts-guardian'
+
 const isCool = isLiterally('cool') // guard for '"cool"'
 const is5 = isLiterally(5) // guard for '5'
 const isTrue = isLiterally(true) // guard for 'true'
@@ -130,17 +133,14 @@ const is1OrTrue = isLiterally(1).orLiterally(true) // guard for '1 | true'
 
 ### Array types
 
-To check that every element in an array is of a specific type, use the `isArrayOf` function, and the `orArrayOf` method:
+To check that every element in an array is of a specific type, use the `isArrayOf` function and the `orArrayOf` method:
 
 ```ts
 import { is, isArrayOf } from 'ts-guardian'
 
 const isStrArr = isArrayOf('string') // guard for 'string[]'
-
 const isStrOrNumArr = isArrayOf(is('string').or('number')) // guard for '(string | number)[]'
-
 const isStrArrOrNumArr = isArrayOf('string').orArrayOf('number') // guard for 'string[] | number[]'
-
 const isStrArrOrUndefined = is('undefined').orArrayOf('string') // guard for 'string[] | undefined'
 ```
 
@@ -161,7 +161,7 @@ isObject({ some: 'prop' }) // returns true
 isObject(null) // returns false
 ```
 
-To create a guard for an object's members, define a guard for each object key:
+To create a guard for an object with specific members, define a guard for each member key:
 
 ```ts
 const hasAge = is({ age: is('number') }) // guard for '{ age: number; }'
@@ -225,7 +225,7 @@ TypeScript will complain if the type predicate returned from `isBook` is not com
 Instead, you can call the `parserFor` function:
 
 ```ts
-import { parser } from 'ts-guardian'
+import { parserFor } from 'ts-guardian'
 
 const parseBook = parserFor<Book>(isBook)
 ```
@@ -245,7 +245,7 @@ const film = {
   director: 'Alfred Hitchcock',
 }
 
-parseBook(book) // returns book as type `Book`
+parseBook(book) // returns book as type 'Book'
 parseBook(film) // returns undefined
 ```
 
@@ -307,9 +307,36 @@ const isSomethingCrazy = is({
 
 <br />
 
+### Assertion
+
+Use the `assertThat` function to throw an error if a value does not match against a guard:
+
+```ts
+import { is, assertThat } from 'ts-guardian'
+
+const value = getSomeUnknownValue()
+
+// Throws an error if type of value is not 'string'
+// Error message: Type of 'value' does not match type guard 'Guard<string>'.
+assertThat(value, is('string'))
+
+// Otherwise, type of value is 'string'
+value.toUpperCase()
+```
+
+You can optionally pass an error message to `assertThat`:
+
+```ts
+import { isUser } from '../myTypeGuards/isUser'
+
+assertThat(value, isUser, 'Value is not a user!')
+```
+
+<br />
+
 ### Convenience guards
 
-There are a few simple guards you'll tend to use frequently. `ts-guardian` exports a bunch of pre-defined convenience guards to make things easier:
+There are a bunch of simple guards you'll tend to use frequently. `ts-guardian` exports these as convenience guards to make things easier:
 
 | Guard                  | Type                                  | Equivalent to                   |
 | ---------------------- | ------------------------------------- | ------------------------------- |
@@ -412,7 +439,7 @@ The solution is that _we make no assumptions that the value is a user-defined ty
 
 Instead, we define a **primitive-based type** of what a `User` object looks like, and let TypeScript determine whether this **primitive-based type** is compatible with the `User` type:
 
-> A _primitive-based type_ is a type constructed from only primitve TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
+> A _primitive-based type_ is a type constructed from only primitive TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
 
 ```ts
 import { is, isNumber, isString, isStringOrUndefined, isUndefined } from 'ts-guardian'
