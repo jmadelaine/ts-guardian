@@ -1,5 +1,9 @@
 # Changelog
 
+[0.0.9] 2020-12-08
+
+- Add `assertThat` function
+
 [0.0.8] 2020-12-07
 
 - Add `is_OrNull` helpers
