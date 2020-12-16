@@ -1,5 +1,10 @@
 # Changelog
 
+[0.0.10] 2020-12-16
+
+- Export `Guard` and `GuardType` types
+- Remove `isObject`, `isObjectOrNull`, and `isObjectOrUndefined` convenience guards
+
 [0.0.9] 2020-12-08
 
 - Add `assertThat` function
