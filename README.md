@@ -351,9 +351,6 @@ There are a bunch of simple guards you'll tend to use frequently. `ts-guardian` 
 | `isNumber`             | `number`                              | `is('number')`                  |
 | `isNumberOrNull`       | <code>number &#124; null</code>       | `is('number').or('null')`       |
 | `isNumberOrUndefined`  | <code>number &#124; undefined</code>  | `is('number').or('undefined')`  |
-| `isObject`             | `object`                              | `is('object')`                  |
-| `isObjectOrNull`       | <code>object &#124; null</code>       | `is('object').or('null')`       |
-| `isObjectOrUndefined`  | <code>object &#124; undefined</code>  | `is('object').or('undefined')`  |
 | `isString`             | `string`                              | `is('string')`                  |
 | `isStringOrNull`       | <code>string &#124; null</code>       | `is('string').or('null')`       |
 | `isStringOrUndefined`  | <code>string &#124; undefined</code>  | `is('string').or('undefined')`  |
@@ -480,7 +477,7 @@ It's now up to TypeScript to tell us if this type is compatible with the `User` 
 const parseUser = parserFor<User>(isUser)
 ```
 
-Iff the type predicate from `isUser` is not compatible with the `User` type, then we get a TypeScript compiler error telling us this. 🎉
+If the type predicate from `isUser` is not compatible with the `User` type, then we get a TypeScript compiler error telling us this. 🎉
 
 Not only that, but the syntax is clean, concise, and readable. Nice! 😎
 
