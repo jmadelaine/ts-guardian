@@ -1,5 +1,9 @@
 # Changelog
 
+[1.0.0] 2020-12-16
+
+- First major release
+
 [0.0.10] 2020-12-16
 
 - Export `Guard` and `GuardType` types
