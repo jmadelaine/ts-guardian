@@ -38,7 +38,7 @@ type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<
 interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
 type GuardTuple = [] | (GuardRecord | Guard<any>)[]
 
-type Guard<T extends unknown> = ((value: unknown) => value is T) & {
+export type Guard<T extends unknown> = ((value: unknown) => value is T) & {
   or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
     t: U
   ) => Guard<T | UnpackType<U>>
@@ -66,7 +66,7 @@ type UnpackType<T extends unknown> = T extends BasicType
   ? V
   : never
 
-type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
+export type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
 
 const arrayMarker = `a`
 const literalMarker = `l`
