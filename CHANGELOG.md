@@ -1,5 +1,9 @@
 # Changelog
 
+[1.1.0] 2020-12-17
+
+- Add `Function` guard
+
 [1.0.0] 2020-12-16
 
 - First major release
