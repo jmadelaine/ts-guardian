@@ -1,5 +1,9 @@
 # Changelog
 
+[1.1.1] 2020-12-17
+
+- Update license
+
 [1.1.0] 2020-12-17
 
 - Add `Function` guard
