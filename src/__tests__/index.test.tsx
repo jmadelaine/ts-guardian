@@ -8,6 +8,7 @@ const basicValues: Record<string, any> = {
   anyValue: undefined,
   booleanValue: true,
   bigintValue: BigInt(0),
+  functionValue: () => undefined,
   nullValue: null,
   numberValue: 0,
   objectValue: {},
@@ -22,6 +23,7 @@ const basicTypes = [
   'any',
   'boolean',
   'bigint',
+  'function',
   'null',
   'number',
   'object',
@@ -204,6 +206,8 @@ describe('parser', () => {
     expect(parserFor(is('boolean'))(bo)).toBe(bo)
     const bi = BigInt(1)
     expect(parserFor(is('bigint'))(bi)).toBe(bi)
+    const f = () => undefined
+    expect(parserFor(is('function'))(f)).toBe(f)
     const nul = null
     expect(parserFor(is('null'))(nul)).toBe(nul)
     const num = 0
@@ -274,6 +278,7 @@ it('has descriptive guard names', () => {
   expect(is('any').name).toBe('Guard<any>')
   expect(is('boolean').name).toBe('Guard<boolean>')
   expect(is('bigint').name).toBe('Guard<bigint>')
+  expect(is('function').name).toBe('Guard<function>')
   expect(is('null').name).toBe('Guard<null>')
   expect(is('number').name).toBe('Guard<number>')
   expect(is('object').name).toBe('Guard<object>')

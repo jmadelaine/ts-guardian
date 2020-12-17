@@ -2,6 +2,7 @@ type BasicType =
   | `any`
   | `boolean`
   | `bigint`
+  | `function`
   | `null`
   | `number`
   | `object`
@@ -16,6 +17,8 @@ type UnpackBasicType<T extends BasicType> = T extends `any`
   ? boolean
   : T extends `bigint`
   ? bigint
+  : T extends `function`
+  ? Function
   : T extends `null`
   ? null
   : T extends `number`
@@ -79,6 +82,8 @@ const getBasicTypeGuard = (t: BasicType) => {
       return (v: unknown): v is boolean => typeof v === `boolean`
     case `bigint`:
       return (v: unknown): v is bigint => typeof v === `bigint`
+    case `function`:
+      return (v: unknown): v is Function => typeof v === 'function'
     case `null`:
       return (v: unknown): v is null => v === null
     case `number`:
@@ -242,6 +247,7 @@ export const isLiterally = <T extends LiteralType>(t: T): Guard<UnpackType<T>> =
 
 export const isBoolean = is(`boolean`)
 export const isBigint = is(`bigint`)
+export const isFunction = is(`function`)
 export const isNull = is(`null`)
 export const isNumber = is(`number`)
 export const isString = is(`string`)
@@ -249,15 +255,17 @@ export const isSymbol = is(`symbol`)
 export const isUndefined = is(`undefined`)
 export const isBooleanOrNull = isBoolean.or(`null`)
 export const isBigintOrNull = isBigint.or(`null`)
+export const isFunctionOrNull = isFunction.or(`null`)
 export const isNumberOrNull = isNumber.or(`null`)
 export const isStringOrNull = isString.or(`null`)
 export const isSymbolOrNull = isSymbol.or(`null`)
 export const isBooleanOrUndefined = isBoolean.or(`undefined`)
 export const isBigintOrUndefined = isBigint.or(`undefined`)
+export const isFunctionOrUndefined = isFunction.or(`undefined`)
+export const isNullOrUndefined = isNull.or(`undefined`)
 export const isNumberOrUndefined = isNumber.or(`undefined`)
 export const isStringOrUndefined = isString.or(`undefined`)
 export const isSymbolOrUndefined = isSymbol.or(`undefined`)
-export const isNullOrUndefined = isNull.or(`undefined`)
 
 export const parserFor = <T extends any = undefined, TGuard extends Guard<any> = Guard<T>>(
   guard: TGuard
