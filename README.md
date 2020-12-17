@@ -1,4 +1,4 @@
-[![Unlicense license][license-badge]][license]
+[![MIT license][license-badge]][license]
 [![NPM version][npm-badge]][npm]
 
 # ts-guardian
@@ -486,7 +486,7 @@ Not only that, but the syntax is clean, concise, and readable. Nice! 😎
 
 <br />
 
-[license-badge]: https://img.shields.io/badge/license-Unlicense-blue.svg
+[license-badge]: https://img.shields.io/badge/license-MIT-informational.svg
 [license]: license.md
 [npm]: https://npmjs.org/package/ts-guardian
 [npm-badge]: https://badge.fury.io/js/ts-guardian.svg
