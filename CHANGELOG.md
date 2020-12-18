@@ -1,5 +1,9 @@
 # Changelog
 
+[1.1.2] 2020-12-18
+
+- Update license in `package.json`
+
 [1.1.1] 2020-12-17
 
 - Update license
