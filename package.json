@@ -25,7 +25,7 @@
     "composable"
   ],
   "author": "Jonathan Madelaine",
-  "license": "Unlicense",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.12.3",
     "@types/jest": "^26.0.15",
