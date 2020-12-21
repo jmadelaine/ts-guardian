@@ -1,5 +1,9 @@
 # Changelog
 
+[1.1.3] 2020-12-22
+
+- Add `function` to Basic Type keys table in README
+
 [1.1.2] 2020-12-18
 
 - Update license in `package.json`
