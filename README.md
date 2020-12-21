@@ -85,18 +85,19 @@ Basic types are the bread and butter of `ts-guardian`.
 
 Here's the complete set of keys:
 
-| Key           | Type        | Equivalent type check          |
-| ------------- | ----------- | ------------------------------ |
-| `'any'`       | `any`       | `true` (matches anything)      |
-| `'boolean'`   | `boolean`   | `typeof <value> === 'boolean'` |
-| `'bigint'`    | `bigint`    | `typeof <value> === 'bigint'`  |
-| `'null'`      | `null`      | `<value> === null`             |
-| `'number'`    | `number`    | `typeof <value> === 'number'`  |
-| `'object'`    | `object`    | `typeof <value> === 'object'`  |
-| `'string'`    | `string`    | `typeof <value> === 'string'`  |
-| `'symbol'`    | `symbol`    | `typeof <value> === 'symbol'`  |
-| `'undefined'` | `undefined` | `<value> === undefined`        |
-| `'unknown'`   | `unknown`   | `true` (matches anything)      |
+| Key           | Type        | Equivalent type check           |
+| ------------- | ----------- | ------------------------------- |
+| `'any'`       | `any`       | `true` (matches anything)       |
+| `'boolean'`   | `boolean`   | `typeof <value> === 'boolean'`  |
+| `'bigint'`    | `bigint`    | `typeof <value> === 'bigint'`   |
+| `'function'`  | `Function`  | `typeof <value> === 'function'` |
+| `'null'`      | `null`      | `<value> === null`              |
+| `'number'`    | `number`    | `typeof <value> === 'number'`   |
+| `'object'`    | `object`    | `typeof <value> === 'object'`   |
+| `'string'`    | `string`    | `typeof <value> === 'string'`   |
+| `'symbol'`    | `symbol`    | `typeof <value> === 'symbol'`   |
+| `'undefined'` | `undefined` | `<value> === undefined`         |
+| `'unknown'`   | `unknown`   | `true` (matches anything)       |
 
 > When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you can specify part of the type as `any` or `unknown`, for example, an object member.
 
