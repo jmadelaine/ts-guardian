@@ -1,5 +1,9 @@
 # Changelog
 
+[1.2.0] 2020-12-27
+
+- Throw `TypeError` instead of `Error` in `assertThat`
+
 [1.1.3] 2020-12-22
 
 - Add `function` to Basic Type keys table in README
