@@ -289,7 +289,7 @@ export const assertThat: <T extends any>(
   errorMessage?: string
 ) => asserts value is T = <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => {
   if (!guard(value)) {
-    throw new Error(
+    throw new TypeError(
       errorMessage ??
         `Type of '${value?.name ?? String(value)}' does not match type guard '${guard.name}'.`
     )
