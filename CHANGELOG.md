@@ -1,5 +1,10 @@
 # Changelog
 
+[1.3.0] 2021-02-07
+
+- Add support for intersection types with `and` method
+- Fix `isLiterally` and `orLiterally` type generation when checking strings that match basic type strings
+
 [1.2.0] 2020-12-27
 
 - Throw `TypeError` instead of `Error` in `assertThat`
