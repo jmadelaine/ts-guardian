@@ -261,6 +261,12 @@ describe('isLiterally', () => {
     expectGuard(isLiterally(true), true)
     expectGuard(isLiterally(true), false, false)
   })
+  it('handles string versions of basic types', () => {
+    expectGuard(isLiterally('true'), 'true')
+    expectGuard(isLiterally('true'), true, false)
+    expectGuard(isLiterally('string'), 'string')
+    expectGuard(isLiterally('string'), 'strin', false)
+  })
 })
 
 describe('assertThat', () => {
@@ -306,4 +312,40 @@ it('has descriptive guard names', () => {
 
   // TODO: Names guards based on object member guards, i.e. Guard<{ something: string; }>
   expect(is({ something: is('string') }).name).toBe('Guard<{}>')
+  expect(is({ a: is('string') }).and({ b: is('string') }).name).toBe('Guard<{} & {}>')
+})
+
+describe('and', () => {
+  it('intersects types', () => {
+    expectGuard(is({ a: is('string') }).and({ b: is('number') }), { a: '', b: 0 })
+  })
+
+  it('intersects complex types', () => {
+    const isA = is({ a: is('string') })
+    const isB = is({ b: is('string') })
+    const isC = is({ c: is('string') })
+    const isD = is({ d: is('string') })
+
+    const value1 = {
+      a: '',
+      b: '',
+    }
+
+    const value2 = {
+      c: '',
+    }
+
+    const value3 = {
+      c: '',
+      d: '',
+    }
+
+    expectGuard(isA.and(isB).or(isC), value1)
+    expectGuard(isA.and(isB).or(isC), value2)
+    expectGuard(isA.or(isB).and(isC), value1)
+    expectGuard(isA.or(isB).and(isC), value2, false)
+    expectGuard(isA.and(isB).or(isC).or(isD), value2)
+    expectGuard(isA.and(isB).or(isC).and(isD), value2, false)
+    expectGuard(isA.and(isB).or(isC).and(isD), value3)
+  })
 })

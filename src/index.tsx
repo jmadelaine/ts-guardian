@@ -11,6 +11,38 @@ type BasicType =
   | `undefined`
   | `unknown`
 
+type WrappedLiteralType<T extends string | number | boolean> = ['l', T]
+type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<any>]
+type AndGuardDefinitionType = ['&', ...GuardDefinition[]]
+interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
+type GuardTuple = [] | (GuardRecord | Guard<any>)[]
+
+export type Guard<T extends unknown> = ((value: unknown) => value is T) & {
+  or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+    t: U
+  ) => Guard<T | UnpackType<U>>
+  and: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+    t: U
+  ) => Guard<T & UnpackType<U>>
+  orArrayOf: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
+    t: U
+  ) => Guard<T | UnpackType<U>[]>
+  orLiterally: <U extends string | number | boolean>(
+    t: U
+  ) => Guard<T | UnpackType<WrappedLiteralType<U>>>
+}
+
+export type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
+
+type GuardDefinition =
+  | BasicType
+  | WrappedLiteralType<string | number | boolean>
+  | EveryArrayElementType
+  | AndGuardDefinitionType
+  | GuardRecord
+  | GuardTuple
+  | Guard<any>
+
 type UnpackBasicType<T extends BasicType> = T extends `any`
   ? any
   : T extends `boolean`
@@ -35,44 +67,19 @@ type UnpackBasicType<T extends BasicType> = T extends `any`
   ? unknown
   : never
 
-type LiteralType = string | number | boolean
-type WrappedLiteralType = ['l', LiteralType]
-type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<any>]
-interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
-type GuardTuple = [] | (GuardRecord | Guard<any>)[]
-
-export type Guard<T extends unknown> = ((value: unknown) => value is T) & {
-  or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
-    t: U
-  ) => Guard<T | UnpackType<U>>
-  orArrayOf: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(
-    t: U
-  ) => Guard<T | UnpackType<U>[]>
-  orLiterally: <U extends LiteralType>(t: U) => Guard<T | UnpackType<U>>
-}
-
-type OrType =
-  | BasicType
-  | WrappedLiteralType
-  | EveryArrayElementType
-  | GuardRecord
-  | GuardTuple
-  | Guard<any>
-
 type UnpackType<T extends unknown> = T extends BasicType
   ? UnpackBasicType<T>
-  : T extends LiteralType
-  ? T
+  : T extends WrappedLiteralType<string | number | boolean>
+  ? T[1]
   : T extends GuardRecord | GuardTuple
   ? { [key in keyof T]: UnpackType<T[key]> }
   : T extends Guard<infer V>
   ? V
   : never
 
-export type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
-
 const arrayMarker = `a`
 const literalMarker = `l`
+const andMarker = `&`
 
 const getBasicTypeGuard = (t: BasicType) => {
   switch (t) {
@@ -101,7 +108,7 @@ const getBasicTypeGuard = (t: BasicType) => {
   }
 }
 
-const isTypeValid = (t: OrType, value: unknown): boolean => {
+const isTypeValid = (t: GuardDefinition, value: unknown): boolean => {
   // Basic type
   if (typeof t === `string`) {
     return getBasicTypeGuard(t)(value)
@@ -110,11 +117,15 @@ const isTypeValid = (t: OrType, value: unknown): boolean => {
   if (typeof t === `function`) {
     return t(value)
   }
-  // Literal or Array or Tuple
+  // Literal or And guard or Array or Tuple
   if (Array.isArray(t)) {
     // Literal
     if (t[0] === literalMarker) {
       return value === t[1]
+    }
+    // And guard
+    if (t[0] === andMarker) {
+      return t.slice(1).every(g => isTypeValid(g as GuardDefinition, value))
     }
     if (!Array.isArray(value)) {
       return false
@@ -146,15 +157,15 @@ const isTypeValid = (t: OrType, value: unknown): boolean => {
   return false
 }
 
-const createNameFromTypes = (orTypes: OrType[]) => {
+const createNameFromTypes = (guardDefinitions: GuardDefinition[], isAnd?: boolean) => {
   let name = ``
 
-  for (let i = 0; i < orTypes.length; ++i) {
+  for (let i = 0; i < guardDefinitions.length; ++i) {
     if (i > 0) {
-      name += ` | `
+      name += isAnd ? ` & ` : ` | `
     }
 
-    const t = orTypes[i]
+    const t = guardDefinitions[i]
     // Basic type
     if (typeof t === `string`) {
       name += t
@@ -168,6 +179,10 @@ const createNameFromTypes = (orTypes: OrType[]) => {
       // Literal
       if (t[0] === literalMarker) {
         name += typeof t[1] === `string` ? `"${t[1]}"` : t[1]
+      }
+      // And guard
+      else if (t[0] === andMarker) {
+        name += createNameFromTypes(t.slice(1) as GuardDefinition[], true)
       }
       // Array
       else if (t[0] === arrayMarker) {
@@ -186,63 +201,85 @@ const createNameFromTypes = (orTypes: OrType[]) => {
     }
   }
 
-  return `Guard<${name}>`
+  return isAnd ? name : `Guard<${name}>`
 }
 
-const createGuard = <T extends any>(orTypes: OrType[]) => {
+const createGuard = <T extends any>(guardDefinitions: GuardDefinition[]) => {
   const guard: Guard<T> = (value: any): value is T =>
-    orTypes.some(orType => {
-      return isTypeValid(orType, value)
+    guardDefinitions.some(guardDef => {
+      return isTypeValid(guardDef, value)
     })
-  Object.defineProperty(guard, `name`, { value: createNameFromTypes(orTypes) })
-  guard.or = createOr<T>(orTypes)
-  guard.orArrayOf = createOrArrayOf<T>(orTypes)
-  guard.orLiterally = createOrLiterally<T>(orTypes)
+  Object.defineProperty(guard, `name`, { value: createNameFromTypes(guardDefinitions) })
+
+  guard.or = createOr<T>(guardDefinitions)
+  guard.orArrayOf = createOrArrayOf<T>(guardDefinitions)
+  guard.orLiterally = createOrLiterally<T>(guardDefinitions)
+  guard.and = createAnd<T>(guardDefinitions)
+
   return guard
 }
 
-const createOr = <TPrev extends any>(prevOrTypes: OrType[]) => <
+const createOr = <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>> => {
-  const orTypes: OrType[] = [...prevOrTypes, t]
-  return createGuard<TPrev | UnpackType<TNew>>(orTypes)
+  const guardDefinitions: GuardDefinition[] = [...prevGuardDefinitions, t]
+  return createGuard<TPrev | UnpackType<TNew>>(guardDefinitions)
 }
 
-const createOrArrayOf = <TPrev extends any>(prevOrTypes: OrType[]) => <
+const createAnd = <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) => <
+  TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
+>(
+  t: TNew
+): Guard<TPrev & UnpackType<TNew>> => {
+  const lastGuardDef = prevGuardDefinitions.slice(-1)[0]
+  const guardDefinitions: GuardDefinition[] = [
+    ...prevGuardDefinitions.slice(0, -1),
+    Array.isArray(lastGuardDef) && lastGuardDef[0] === andMarker
+      ? [...lastGuardDef, t]
+      : [andMarker, lastGuardDef, t],
+  ]
+  return createGuard<TPrev & UnpackType<TNew>>(guardDefinitions)
+}
+
+const createOrArrayOf = <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) => <
   TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>
 >(
   t: TNew
 ): Guard<TPrev | UnpackType<TNew>[]> => {
-  const orTypes: OrType[] = [...prevOrTypes, [arrayMarker, t]]
-  return createGuard<TPrev | UnpackType<TNew>[]>(orTypes)
+  const guardDefinitions: GuardDefinition[] = [...prevGuardDefinitions, [arrayMarker, t]]
+  return createGuard<TPrev | UnpackType<TNew>[]>(guardDefinitions)
 }
 
-const createOrLiterally = <TPrev extends any>(prevOrTypes: OrType[]) => <TNew extends LiteralType>(
+const createOrLiterally = <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) => <
+  TNew extends string | number | boolean
+>(
   t: TNew
-): Guard<TPrev | UnpackType<TNew>> => {
-  const orTypes: OrType[] = [...prevOrTypes, [literalMarker, t]]
-  return createGuard<TPrev | UnpackType<TNew>>(orTypes)
+): Guard<TPrev | UnpackType<WrappedLiteralType<TNew>>> => {
+  const guardDefinitions: GuardDefinition[] = [...prevGuardDefinitions, [literalMarker, t]]
+  return createGuard<TPrev | UnpackType<WrappedLiteralType<TNew>>>(guardDefinitions)
 }
 
 export const is = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>> => {
-  const orTypes: OrType[] = [t]
-  return createGuard<UnpackType<T>>(orTypes)
+  const guardDefinitions: GuardDefinition[] = [t]
+  return createGuard<UnpackType<T>>(guardDefinitions)
 }
 
 export const isArrayOf = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
   t: T
 ): Guard<UnpackType<T>[]> => {
-  const orTypes: OrType[] = [[arrayMarker, t]]
-  return createGuard<UnpackType<T>[]>(orTypes)
+  const guardDefinitions: GuardDefinition[] = [[arrayMarker, t]]
+  return createGuard<UnpackType<T>[]>(guardDefinitions)
 }
 
-export const isLiterally = <T extends LiteralType>(t: T): Guard<UnpackType<T>> => {
-  const orTypes: OrType[] = [[literalMarker, t]]
-  return createGuard<UnpackType<T>>(orTypes)
+export const isLiterally = <T extends string | number | boolean>(
+  t: T
+): Guard<UnpackType<WrappedLiteralType<T>>> => {
+  const guardDefinitions: GuardDefinition[] = [[literalMarker, t]]
+  return createGuard<UnpackType<WrappedLiteralType<T>>>(guardDefinitions)
 }
 
 export const isBoolean = is(`boolean`)
