@@ -117,6 +117,24 @@ isStringOrNumber(true) // returns false
 
 <br />
 
+### Intersection types
+
+Every type guard has an `and` method which has the same signature as the `or` method. Use `and` to create intersection types:
+
+```ts
+const hasXOrY = is({ x: is('any') }).or({ y: is('any') }) // guard for '{ x: any; } | { y: any; }'
+const hasXAndY = is({ x: is('any') }).and({ y: is('any') }) // guard for '{ x: any; } & { y: any; }'
+
+hasXOrY({ x: '' }) // returns true
+hasXOrY({ y: '' }) // returns true
+hasXOrY({ x: '', y: '' }) // returns true
+hasXAndY({ x: '' }) // returns false
+hasXAndY({ y: '' }) // returns false
+hasXAndY({ x: '', y: '' }) // returns true
+```
+
+<br />
+
 ### Literal types
 
 Pass a `number`, `string`, or `boolean` to the `isLiterally` function and the `orLiterally` method to create guards for literal types:
