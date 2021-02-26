@@ -1,5 +1,11 @@
 # Changelog
 
+[1.4.0] 2021-02-27
+
+- Add instance type support with `isInstanceOf` and `orInstanceOf`
+- Add `isDate`, `isDateOrNull`, and `isDateOrUndefined` convenience guards
+- Add `isRegExp`, `isRegExpOrNull`, and `isRegExpOrUndefined` convenience guards
+
 [1.3.0] 2021-02-07
 
 - Add support for intersection types with `and` method
