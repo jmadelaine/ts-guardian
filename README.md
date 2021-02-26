@@ -396,29 +396,35 @@ assertThat(value, isUser, 'Value is not a user!')
 
 There are a bunch of simple guards you'll tend to use frequently. `ts-guardian` exports these as convenience guards to make things easier:
 
-| Guard                   | Type                                   | Equivalent to                    |
-| ----------------------- | -------------------------------------- | -------------------------------- |
-| `isBoolean`             | `boolean`                              | `is('boolean')`                  |
-| `isBooleanOrNull`       | <code>boolean &#124; null</code>       | `is('boolean').or('null')`       |
-| `isBooleanOrUndefined`  | <code>boolean &#124; undefined</code>  | `is('boolean').or('undefined')`  |
-| `isBigint`              | `bigint`                               | `is('bigint')`                   |
-| `isBigintOrNull`        | <code>bigint &#124; null</code>        | `is('bigint').or('null')`        |
-| `isBigintOrUndefined`   | <code>bigint &#124; undefined</code>   | `is('bigint').or('undefined')`   |
-| `isFunction`            | `Function`                             | `is('function')`                 |
-| `isFunctionOrNull`      | <code>Function &#124; null</code>      | `is('function').or('null')`      |
-| `isFunctionOrUndefined` | <code>Function &#124; undefined</code> | `is('function').or('undefined')` |
-| `isNull`                | `null`                                 | `is('null')`                     |
-| `isNullOrUndefined`     | <code>null &#124; undefined</code>     | `is('null').or('undefined')`     |
-| `isNumber`              | `number`                               | `is('number')`                   |
-| `isNumberOrNull`        | <code>number &#124; null</code>        | `is('number').or('null')`        |
-| `isNumberOrUndefined`   | <code>number &#124; undefined</code>   | `is('number').or('undefined')`   |
-| `isString`              | `string`                               | `is('string')`                   |
-| `isStringOrNull`        | <code>string &#124; null</code>        | `is('string').or('null')`        |
-| `isStringOrUndefined`   | <code>string &#124; undefined</code>   | `is('string').or('undefined')`   |
-| `isSymbol`              | `symbol`                               | `is('symbol')`                   |
-| `isSymbolOrNull`        | <code>symbol &#124; null</code>        | `is('symbol').or('null')`        |
-| `isSymbolOrUndefined`   | <code>symbol &#124; undefined</code>   | `is('symbol').or('undefined')`   |
-| `isUndefined`           | `undefined`                            | `is('undefined')`                |
+| Guard                   | Type                                   | Equivalent to                          |
+| ----------------------- | -------------------------------------- | -------------------------------------- |
+| `isBoolean`             | `boolean`                              | `is('boolean')`                        |
+| `isBooleanOrNull`       | <code>boolean &#124; null</code>       | `is('boolean').or('null')`             |
+| `isBooleanOrUndefined`  | <code>boolean &#124; undefined</code>  | `is('boolean').or('undefined')`        |
+| `isBigint`              | `bigint`                               | `is('bigint')`                         |
+| `isBigintOrNull`        | <code>bigint &#124; null</code>        | `is('bigint').or('null')`              |
+| `isBigintOrUndefined`   | <code>bigint &#124; undefined</code>   | `is('bigint').or('undefined')`         |
+| `isDate`                | `Date`                                 | `isinstanceOf(Date)`                   |
+| `isDateOrNull`          | <code>Date &#124; null</code>          | `isinstanceOf(Date).or('null')`        |
+| `isDateOrUndefined`     | <code>Date &#124; undefined</code>     | `isinstanceOf(Date).or('undefined')`   |
+| `isFunction`            | `Function`                             | `is('function')`                       |
+| `isFunctionOrNull`      | <code>Function &#124; null</code>      | `is('function').or('null')`            |
+| `isFunctionOrUndefined` | <code>Function &#124; undefined</code> | `is('function').or('undefined')`       |
+| `isNull`                | `null`                                 | `is('null')`                           |
+| `isNullOrUndefined`     | <code>null &#124; undefined</code>     | `is('null').or('undefined')`           |
+| `isNumber`              | `number`                               | `is('number')`                         |
+| `isNumberOrNull`        | <code>number &#124; null</code>        | `is('number').or('null')`              |
+| `isNumberOrUndefined`   | <code>number &#124; undefined</code>   | `is('number').or('undefined')`         |
+| `isRegExp`              | `RegExp`                               | `isinstanceOf(RegExp)`                 |
+| `isRegExpOrNull`        | <code>RegExp &#124; null</code>        | `isinstanceOf(RegExp).or('null')`      |
+| `isRegExpOrUndefined`   | <code>RegExp &#124; undefined</code>   | `isinstanceOf(RegExp).or('undefined')` |
+| `isString`              | `string`                               | `is('string')`                         |
+| `isStringOrNull`        | <code>string &#124; null</code>        | `is('string').or('null')`              |
+| `isStringOrUndefined`   | <code>string &#124; undefined</code>   | `is('string').or('undefined')`         |
+| `isSymbol`              | `symbol`                               | `is('symbol')`                         |
+| `isSymbolOrNull`        | <code>symbol &#124; null</code>        | `is('symbol').or('null')`              |
+| `isSymbolOrUndefined`   | <code>symbol &#124; undefined</code>   | `is('symbol').or('undefined')`         |
+| `isUndefined`           | `undefined`                            | `is('undefined')`                      |
 
 <br />
 
@@ -473,7 +479,7 @@ Not pretty, but it works!
 
 Apart from being hard to read and harder to reason about, this function seems to get the job done. We have type safety around the `User` type. Great!
 
-Oh, but what if we did this instead:
+But what if we did this instead:
 
 ```ts
 const isUser = (input: any): input is User => {
