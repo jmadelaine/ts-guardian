@@ -33,10 +33,12 @@ Type guards are used to confirm the structure of data. If your app deals with AP
   - [The `is` function](#the-is-function)
   - [Basic types](#basic-types)
   - [Union types](#union-types)
+  - [Intersection types](#intersection-types)
   - [Literal types](#literal-types)
   - [Array types](#array-types)
   - [Object types](#object-types)
   - [Tuple types](#tuple-types)
+  - [Instance types](#instance-types)
   - [User-defined types](#user-defined-types)
   - [Composition](#composition)
   - [Assertion](#assertion)
@@ -100,6 +102,8 @@ Here's the complete set of keys:
 | `'unknown'`   | `unknown`   | `true` (matches anything)       |
 
 > When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you can specify part of the type as `any` or `unknown`, for example, an object member.
+
+> Basic type guards will return false for objects crated with constructors. For example, `is('string')(new String())` returns `false`. Use [`isInstanceOf`](#instance-types) instead.
 
 <br />
 
@@ -200,6 +204,41 @@ const isStrNumTuple = is([is('string'), is('number')]) // guard for '[string, nu
 
 isStrNumTuple(['hello']) // returns false
 isStrNumTuple(['hello', 5]) // returns true
+```
+
+<br />
+
+### Instance types
+
+Guards for object instances are defined by passing a constructor object to the `isInstanceOf` function and the `orInstanceOf` method:
+
+```ts
+const isDate = isInstanceOf(Date) // guard for 'Date'
+
+isDate(new Date()) // returns true
+
+const isRegExpOrUndefined = is('undefined').orInstanceOf(RegExp) // guard for 'RegExp | undefined'
+
+isRegExpOrUndefined(/./) // returns true
+isRegExpOrUndefined(new RegExp('.')) // returns true
+isRegExpOrUndefined(undefined) // returns true
+```
+
+This works with user-defined classes too:
+
+```ts
+class Person {
+  name: string
+  constructor(name: string) {
+    this.name = name
+  }
+}
+
+const steve = new Person('Steve')
+
+const isPerson = isInstanceOf(Person) // guard for 'Person'
+
+isPerson(steve) // returns true
 ```
 
 <br />

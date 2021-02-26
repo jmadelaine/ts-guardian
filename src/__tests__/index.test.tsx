@@ -1,4 +1,4 @@
-import { assertThat, is, isArrayOf, isLiterally, parserFor } from '..'
+import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, parserFor } from '..'
 
 const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
   expect(guard(value)).toBe(expectTrue)
@@ -310,9 +310,25 @@ it('has descriptive guard names', () => {
 
   expect(is({}).name).toBe('Guard<{}>')
 
+  expect(isInstanceOf(Date).name).toBe('Guard<Date>')
+
   // TODO: Names guards based on object member guards, i.e. Guard<{ something: string; }>
   expect(is({ something: is('string') }).name).toBe('Guard<{}>')
   expect(is({ a: is('string') }).and({ b: is('string') }).name).toBe('Guard<{} & {}>')
+})
+
+describe('instanceOf', () => {
+  it('gaurds constructor objects', () => {
+    expectGuard(isInstanceOf(Object), {})
+    expectGuard(isInstanceOf(String), '', false)
+    expectGuard(isInstanceOf(Date), new Date())
+    expectGuard(isInstanceOf(Date), Date, false)
+    expectGuard(isInstanceOf(RegExp), /0/)
+    expectGuard(isInstanceOf(Date).orInstanceOf(RegExp), new Date())
+    expectGuard(isInstanceOf(Date).orInstanceOf(RegExp), new RegExp('0'))
+    class Person {}
+    expectGuard(isInstanceOf(Person), new Person())
+  })
 })
 
 describe('and', () => {
