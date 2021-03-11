@@ -97,6 +97,21 @@ describe('is', () => {
         prop2: 0,
       }
     )
+
+    // Allows plain objects inside guard object
+    const guardA = is({
+      a: is({
+        b: is('string'),
+      }),
+    })
+    const guardB = is({
+      a: {
+        b: is('string'),
+      },
+    })
+    const v = { a: { b: '' } }
+    expectGuard(guardA, v)
+    expectGuard(guardB, v)
   })
   it('guards tuples', () => {
     const str = is('string')
