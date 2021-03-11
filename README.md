@@ -103,7 +103,7 @@ Here's the complete set of keys:
 
 > When combined with other guards, the `any` and `unknown` type guards take precedence. These are useful in complex types where you can specify part of the type as `any` or `unknown`, for example, an object member.
 
-> Basic type guards will return false for objects crated with constructors. For example, `is('string')(new String())` returns `false`. Use [`isInstanceOf`](#instance-types) instead.
+> Basic type guards will return false for objects created with constructors. For example, `is('string')(new String())` returns `false`. Use [`isInstanceOf`](#instance-types) instead.
 
 <br />
 
@@ -336,33 +336,6 @@ const isNullOrUndef = is('null').or('undefined') // guard for 'null | undefined'
 const isStrOrNumOrNullOrUndef = isStrOrNum.or(isNullOrUndef)
 ```
 
-Go as crazy as you like:
-
-```ts
-const isStringOrUndefined = is('string').or('undefined')
-const isBooleanOrUndefined = is('boolean').or('undefined')
-const isNumberOrBigInt = is('number').or('bigint')
-
-/* guard for:
-{
-  a: string | number | bigint | undefined;
-  b: boolean | undefined;
-  c: {
-    d: [string | undefined, number];
-    e: any;
-  } | undefined;
-} | null>
-*/
-const isSomethingCrazy = is({
-  a: isNumberOrBigInt.or(isStringOrUndefined),
-  b: isBooleanOrUndefined,
-  c: is({
-    d: [isStringOrUndefined, is('number')],
-    e: is('any'),
-  }).or('undefined'),
-}).or('null')
-```
-
 <br />
 
 ### Assertion
@@ -404,9 +377,9 @@ There are a bunch of simple guards you'll tend to use frequently. `ts-guardian` 
 | `isBigint`              | `bigint`                               | `is('bigint')`                         |
 | `isBigintOrNull`        | <code>bigint &#124; null</code>        | `is('bigint').or('null')`              |
 | `isBigintOrUndefined`   | <code>bigint &#124; undefined</code>   | `is('bigint').or('undefined')`         |
-| `isDate`                | `Date`                                 | `isinstanceOf(Date)`                   |
-| `isDateOrNull`          | <code>Date &#124; null</code>          | `isinstanceOf(Date).or('null')`        |
-| `isDateOrUndefined`     | <code>Date &#124; undefined</code>     | `isinstanceOf(Date).or('undefined')`   |
+| `isDate`                | `Date`                                 | `isInstanceOf(Date)`                   |
+| `isDateOrNull`          | <code>Date &#124; null</code>          | `isInstanceOf(Date).or('null')`        |
+| `isDateOrUndefined`     | <code>Date &#124; undefined</code>     | `isInstanceOf(Date).or('undefined')`   |
 | `isFunction`            | `Function`                             | `is('function')`                       |
 | `isFunctionOrNull`      | <code>Function &#124; null</code>      | `is('function').or('null')`            |
 | `isFunctionOrUndefined` | <code>Function &#124; undefined</code> | `is('function').or('undefined')`       |
@@ -415,9 +388,9 @@ There are a bunch of simple guards you'll tend to use frequently. `ts-guardian` 
 | `isNumber`              | `number`                               | `is('number')`                         |
 | `isNumberOrNull`        | <code>number &#124; null</code>        | `is('number').or('null')`              |
 | `isNumberOrUndefined`   | <code>number &#124; undefined</code>   | `is('number').or('undefined')`         |
-| `isRegExp`              | `RegExp`                               | `isinstanceOf(RegExp)`                 |
-| `isRegExpOrNull`        | <code>RegExp &#124; null</code>        | `isinstanceOf(RegExp).or('null')`      |
-| `isRegExpOrUndefined`   | <code>RegExp &#124; undefined</code>   | `isinstanceOf(RegExp).or('undefined')` |
+| `isRegExp`              | `RegExp`                               | `isInstanceOf(RegExp)`                 |
+| `isRegExpOrNull`        | <code>RegExp &#124; null</code>        | `isInstanceOf(RegExp).or('null')`      |
+| `isRegExpOrUndefined`   | <code>RegExp &#124; undefined</code>   | `isInstanceOf(RegExp).or('undefined')` |
 | `isString`              | `string`                               | `is('string')`                         |
 | `isStringOrNull`        | <code>string &#124; null</code>        | `is('string').or('null')`              |
 | `isStringOrUndefined`   | <code>string &#124; undefined</code>   | `is('string').or('undefined')`         |
