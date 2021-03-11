@@ -1,5 +1,10 @@
 # Changelog
 
+[1.4.1] 2021-03-12
+
+- Add test for plain objects inside guard objects
+- Update README
+
 [1.4.0] 2021-02-27
 
 - Add instance type support with `isInstanceOf` and `orInstanceOf`
