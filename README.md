@@ -50,7 +50,11 @@ Type guards are used to confirm the structure of data. If your app deals with AP
 ## Installation
 
 ```
+// npm
 npm i ts-guardian
+
+// yarn
+yarn add ts-guardian
 ```
 
 <br />
@@ -121,27 +125,9 @@ isStringOrNumber(true) // returns false
 
 <br />
 
-### Intersection types
-
-Every type guard has an `and` method which has the same signature as the `or` method. Use `and` to create intersection types:
-
-```ts
-const hasXOrY = is({ x: is('any') }).or({ y: is('any') }) // guard for '{ x: any; } | { y: any; }'
-const hasXAndY = is({ x: is('any') }).and({ y: is('any') }) // guard for '{ x: any; } & { y: any; }'
-
-hasXOrY({ x: '' }) // returns true
-hasXOrY({ y: '' }) // returns true
-hasXOrY({ x: '', y: '' }) // returns true
-hasXAndY({ x: '' }) // returns false
-hasXAndY({ y: '' }) // returns false
-hasXAndY({ x: '', y: '' }) // returns true
-```
-
-<br />
-
 ### Literal types
 
-Pass a `number`, `string`, or `boolean` to the `isLiterally` function and the `orLiterally` method to create guards for literal types:
+Pass a `number`, `string`, or `boolean` to the `isLiterally` function and the `orLiterally` method to create guards for literal types. You can also pass multiple arguments to create literal union type guards:
 
 ```ts
 import { isLiterally } from 'ts-guardian'
@@ -150,6 +136,7 @@ const isCool = isLiterally('cool') // guard for '"cool"'
 const is5 = isLiterally(5) // guard for '5'
 const isTrue = isLiterally(true) // guard for 'true'
 const is1OrTrue = isLiterally(1).orLiterally(true) // guard for '1 | true'
+const isCoolOr5OrTrue = isLiterally('cool', 5, true) // guard for '"cool" | 5 | true'
 ```
 
 <br />
@@ -168,6 +155,25 @@ const isStrArrOrUndefined = is('undefined').orArrayOf('string') // guard for 'st
 ```
 
 > Note the difference between `isArrayOf(is('string').or('number'))` which creates a guard for `(string | number)[]`, and `isArrayOf('string').orArrayOf('number')` which creates a guard for `string[] | number[]`.
+
+<br />
+
+### Tuple types
+
+Guards for tuples are defined by passing an array to `is`:
+
+```ts
+const isStrNumTuple = is([is('string'), is('number')]) // guard for '[string, number]'
+
+isStrNumTuple(['high']) // returns false
+isStrNumTuple(['high', 5]) // returns true
+```
+
+Guards for nested tuples can be defined by passing tuple guards to tuple guards:
+
+```ts
+const isStrAndNumNumTupleTuple = is([is('string'), is([is('number'), is('number')])]) // guard for '['string', [number, number]]'
+```
 
 <br />
 
@@ -195,15 +201,20 @@ hasAge({ name: 'Bob', age: 40 }) // returns true
 
 <br />
 
-### Tuple types
+### Intersection types
 
-Guards for tuples are defined by passing an array to `is`:
+Every type guard has an `and` method which has the same signature as the `or` method. Use `and` to create intersection types:
 
 ```ts
-const isStrNumTuple = is([is('string'), is('number')]) // guard for '[string, number]'
+const hasXOrY = is({ x: is('any') }).or({ y: is('any') }) // guard for '{ x: any; } | { y: any; }'
+const hasXAndY = is({ x: is('any') }).and({ y: is('any') }) // guard for '{ x: any; } & { y: any; }'
 
-isStrNumTuple(['hello']) // returns false
-isStrNumTuple(['hello', 5]) // returns true
+hasXOrY({ x: '' }) // returns true
+hasXOrY({ y: '' }) // returns true
+hasXOrY({ x: '', y: '' }) // returns true
+hasXAndY({ x: '' }) // returns false
+hasXAndY({ y: '' }) // returns false
+hasXAndY({ x: '', y: '' }) // returns true
 ```
 
 <br />

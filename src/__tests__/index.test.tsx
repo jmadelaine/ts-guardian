@@ -53,62 +53,17 @@ describe('is', () => {
   it('guards objects', () => {
     // Simple object
     expectGuard(is({}), {})
-
     // Single basic prop
-    expectGuard(
-      is({
-        prop1: is('string'),
-      }),
-      {
-        prop1: '',
-      }
-    )
-
+    expectGuard(is({ prop1: is('string') }), { prop1: '' })
     // Handles undefined props
-    expectGuard(
-      is({
-        prop1: is('string'),
-        prop2: is('undefined'),
-      }),
-      {
-        prop1: '',
-      }
-    )
-
+    expectGuard(is({ prop1: is('string'), prop2: is('undefined') }), { prop1: '' })
     // Allows extra props
-    expectGuard(
-      is({
-        prop1: is('string'),
-      }),
-      {
-        prop1: '',
-        prop2: '',
-      }
-    )
-
+    expectGuard(is({ prop1: is('string') }), { prop1: '', prop2: '' })
     // Allows props of differing types
-    expectGuard(
-      is({
-        prop1: is('string'),
-        prop2: is('number'),
-      }),
-      {
-        prop1: '',
-        prop2: 0,
-      }
-    )
-
+    expectGuard(is({ prop1: is('string'), prop2: is('number') }), { prop1: '', prop2: 0 })
     // Allows plain objects inside guard object
-    const guardA = is({
-      a: is({
-        b: is('string'),
-      }),
-    })
-    const guardB = is({
-      a: {
-        b: is('string'),
-      },
-    })
+    const guardA = is({ a: is({ b: is('string') }) })
+    const guardB = is({ a: { b: is('string') } })
     const v = { a: { b: '' } }
     expectGuard(guardA, v)
     expectGuard(guardB, v)
@@ -116,7 +71,6 @@ describe('is', () => {
   it('guards tuples', () => {
     const str = is('string')
     const num = is('number')
-
     // Simple object
     expectGuard(is([str]), [''])
     expectGuard(is([num]), [5])
@@ -179,18 +133,8 @@ describe('isArrayOf', () => {
   it('guards objects', () => {
     // Simple object
     expectGuard(isArrayOf({}), [{}])
-
     // Single basic prop
-    expectGuard(
-      isArrayOf({
-        prop1: is('string'),
-      }),
-      [
-        {
-          prop1: '',
-        },
-      ]
-    )
+    expectGuard(isArrayOf({ prop1: is('string') }), [{ prop1: '' }])
   })
   it('allows guard chaining', () => {
     const guard = isArrayOf('boolean').or('null').orArrayOf('number')
@@ -242,19 +186,9 @@ describe('parser', () => {
     expect(parserFor(is('string'))(num)).toBe(undefined)
   })
   it('parses objects', () => {
-    const o = {
-      prop1: 'hello',
-    }
-
-    const guardSuccess = is({
-      prop1: is('string'),
-    })
-
-    const guardFail = is({
-      prop1: is('string'),
-      prop2: is('string'),
-    })
-
+    const o = { prop1: 'hello' }
+    const guardSuccess = is({ prop1: is('string') })
+    const guardFail = is({ prop1: is('string'), prop2: is('string') })
     expect(parserFor(guardSuccess)(o)).toBe(o)
     expect(parserFor(guardFail)(o)).toBe(undefined)
   })
@@ -281,6 +215,13 @@ describe('isLiterally', () => {
     expectGuard(isLiterally('true'), true, false)
     expectGuard(isLiterally('string'), 'string')
     expectGuard(isLiterally('string'), 'strin', false)
+  })
+  it('handles multiple arguments', () => {
+    expectGuard(isLiterally('a', 'b', 1), 'a')
+    expectGuard(isLiterally('a', 'b', 1), 'b')
+    expectGuard(isLiterally('a', 'b', 1), 1)
+    expectGuard(isLiterally('a', 'b', 1), 'c', false)
+    expectGuard(isLiterally('a', 'b', 1), 2, false)
   })
 })
 
@@ -312,6 +253,7 @@ it('has descriptive guard names', () => {
   expect(isLiterally('hello').name).toBe('Guard<"hello">')
   expect(isLiterally(5).name).toBe('Guard<5>')
   expect(isLiterally(true).name).toBe('Guard<true>')
+  expect(isLiterally('a', 'b', 1, true).name).toBe('Guard<"a" | "b" | 1 | true>')
 
   expect(isArrayOf('string').or('number').name).toBe('Guard<string[] | number>')
   expect(isArrayOf('string').orArrayOf('number').name).toBe('Guard<string[] | number[]>')
@@ -356,21 +298,9 @@ describe('and', () => {
     const isB = is({ b: is('string') })
     const isC = is({ c: is('string') })
     const isD = is({ d: is('string') })
-
-    const value1 = {
-      a: '',
-      b: '',
-    }
-
-    const value2 = {
-      c: '',
-    }
-
-    const value3 = {
-      c: '',
-      d: '',
-    }
-
+    const value1 = { a: '', b: '' }
+    const value2 = { c: '' }
+    const value3 = { c: '', d: '' }
     expectGuard(isA.and(isB).or(isC), value1)
     expectGuard(isA.and(isB).or(isC), value2)
     expectGuard(isA.or(isB).and(isC), value1)
