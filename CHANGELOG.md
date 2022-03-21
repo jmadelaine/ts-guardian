@@ -1,5 +1,13 @@
 # Changelog
 
+[1.6.0] 2022-03-21
+
+- Objects and Tuple guards accept Basic Types
+
+[1.5.0] 2022-03-02
+
+- isLiterally and orLiterally allow multiple arguments
+
 [1.4.1] 2021-03-12
 
 - Add test for plain objects inside guard objects
