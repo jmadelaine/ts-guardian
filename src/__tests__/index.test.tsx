@@ -61,12 +61,10 @@ describe('is', () => {
     expectGuard(is({ prop1: is('string') }), { prop1: '', prop2: '' })
     // Allows props of differing types
     expectGuard(is({ prop1: is('string'), prop2: is('number') }), { prop1: '', prop2: 0 })
-    // Allows plain objects inside guard object
-    const guardA = is({ a: is({ b: is('string') }) })
-    const guardB = is({ a: { b: is('string') } })
-    const v = { a: { b: '' } }
-    expectGuard(guardA, v)
-    expectGuard(guardB, v)
+    // Allows nested guards
+    expectGuard(is({ a: is({ b: is('string') }) }), { a: { b: '' } })
+    // Allows nested objects and basic types
+    expectGuard(is({ a: { b: 'string' } }), { a: { b: '' } })
   })
   it('guards tuples', () => {
     const str = is('string')
@@ -76,6 +74,7 @@ describe('is', () => {
     expectGuard(is([num]), [5])
     expectGuard(is([str, num]), ['', 5])
     expectGuard(is([str, num]), [5, ''], false)
+    expectGuard(is(['string']), [''])
   })
   it('allows guard chaining', () => {
     const guard = is('boolean').or('null').or('number').or('string').or('undefined')

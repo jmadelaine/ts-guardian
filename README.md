@@ -163,7 +163,7 @@ const isStrArrOrUndefined = is('undefined').orArrayOf('string') // guard for 'st
 Guards for tuples are defined by passing an array to `is`:
 
 ```ts
-const isStrNumTuple = is([is('string'), is('number')]) // guard for '[string, number]'
+const isStrNumTuple = is(['string', 'number']) // guard for '[string, number]'
 
 isStrNumTuple(['high']) // returns false
 isStrNumTuple(['high', 5]) // returns true
@@ -172,7 +172,7 @@ isStrNumTuple(['high', 5]) // returns true
 Guards for nested tuples can be defined by passing tuple guards to tuple guards:
 
 ```ts
-const isStrAndNumNumTupleTuple = is([is('string'), is([is('number'), is('number')])]) // guard for '['string', [number, number]]'
+const isStrAndNumNumTupleTuple = is(['string', is(['number', 'number'])]) // guard for '['string', [number, number]]'
 ```
 
 <br />
@@ -193,7 +193,7 @@ isObject(null) // returns false
 To create a guard for an object with specific members, define a guard for each member key:
 
 ```ts
-const hasAge = is({ age: is('number') }) // guard for '{ age: number; }'
+const hasAge = is({ age: 'number' }) // guard for '{ age: number; }'
 
 hasAge({ name: 'Bob' }) // returns false
 hasAge({ name: 'Bob', age: 40 }) // returns true
@@ -206,8 +206,8 @@ hasAge({ name: 'Bob', age: 40 }) // returns true
 Every type guard has an `and` method which has the same signature as the `or` method. Use `and` to create intersection types:
 
 ```ts
-const hasXOrY = is({ x: is('any') }).or({ y: is('any') }) // guard for '{ x: any; } | { y: any; }'
-const hasXAndY = is({ x: is('any') }).and({ y: is('any') }) // guard for '{ x: any; } & { y: any; }'
+const hasXOrY = is({ x: 'any' }).or({ y: 'any' }) // guard for '{ x: any; } | { y: any; }'
+const hasXAndY = is({ x: 'any' }).and({ y: 'any' }) // guard for '{ x: any; } & { y: any; }'
 
 hasXOrY({ x: '' }) // returns true
 hasXOrY({ y: '' }) // returns true
@@ -490,12 +490,12 @@ Instead, we define a **primitive-based type** of what a `User` object looks like
 > A _primitive-based type_ is a type constructed from only primitive TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
 
 ```ts
-import { is, isNumber, isString, isStringOrUndefined, isUndefined } from 'ts-guardian'
+import { is, isStringOrUndefined, isUndefined } from 'ts-guardian'
 
 // We make no assumptions that the data is a user-defined type
 const isUser = is({
-  id: isNumber,
-  name: isString,
+  id: 'number',
+  name: 'string',
   email: isStringOrUndefined,
   phone: isUndefined.or({
     primary: isStringOrUndefined,

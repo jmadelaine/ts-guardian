@@ -15,8 +15,9 @@ type WrappedLiteralType<T extends (string | number | boolean)[]> = ['l', T]
 type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<any>]
 type AndGuardDefinitionType = ['&', ...GuardDefinition[]]
 type InstanceGuardDefinitionType = ['i', new (...args: any[]) => any]
-interface GuardRecord extends Record<PropertyKey, GuardRecord | GuardTuple | Guard<any>> {}
-type GuardTuple = [] | (GuardRecord | Guard<any>)[]
+interface GuardRecord
+  extends Record<PropertyKey, BasicType | GuardRecord | GuardTuple | Guard<any>> {}
+type GuardTuple = [] | (BasicType | GuardRecord | Guard<any>)[]
 
 // prettier-ignore
 export type Guard<T extends unknown> = {
