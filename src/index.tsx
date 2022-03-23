@@ -88,77 +88,44 @@ const getBasicTypeGuard = (t: BasicType) => {
 }
 
 const isTypeValid = (t: GuardDefinition, value: unknown): boolean => {
-  // Basic type
-  if (typeof t === `string`) return getBasicTypeGuard(t)(value)
-  // Guard
-  if (typeof t === 'function') return t(value)
-  // Literal or And guard or Instance guard or Array or Tuple
-  if (Array.isArray(t)) {
-    // Literal
-    if (t[0] === literalMarker) return (t[1] as unknown[]).includes(value)
-    // Instance guard
-    if (t[0] === instanceMarker) return value instanceof t[1]
-    // And guard
-    if (t[0] === andMarker) return t.slice(1).every(g => isTypeValid(g as GuardDefinition, value))
-    if (!Array.isArray(value)) return false
-    // Array
-    if (t[0] === arrayMarker) return value.every(el => isTypeValid(t[1]!, el))
-    // Tuple
-    for (let i = 0; i < t.length; ++i) {
-      if (!isTypeValid((t as any[])[i], value[i])) return false
+  try {
+    // Basic type
+    if (typeof t === `string`) return getBasicTypeGuard(t)(value)
+    // Guard
+    if (typeof t === 'function') return t(value)
+    // "Literal" or "And" or "Instance" or "Array" or "Tuple" guard
+    if (Array.isArray(t)) {
+      // Literal
+      if (t[0] === literalMarker) return (t[1] as unknown[]).includes(value)
+      // Instance
+      if (t[0] === instanceMarker) return value instanceof t[1]
+      // And
+      if (t[0] === andMarker) return t.slice(1).every(g => isTypeValid(g as GuardDefinition, value))
+      if (!Array.isArray(value)) return false
+      // Array
+      if (t[0] === arrayMarker) return value.every(el => isTypeValid(t[1]!, el))
+      // Tuple
+      for (let i = 0; i < t.length; ++i) {
+        if (!isTypeValid((t as any[])[i], value[i])) return false
+      }
+      return true
     }
-    return true
-  }
-  // Record
-  if (typeof t === `object` && t !== null) {
-    if (typeof value !== `object` || value === null) return false
+    // Record
+    if (typeof t !== `object` || t === null || typeof value !== `object` || value === null)
+      return false
     for (const k of Object.keys(t)) {
       if (!isTypeValid((t as GuardRecord)[k], (value as Record<PropertyKey, unknown>)[k]))
         return false
     }
     return true
+  } catch {
+    return false
   }
-  return false
-}
-
-const createNameFromTypes = (guardDefinitions: GuardDefinition[], isAnd?: boolean) => {
-  let name = ``
-  for (let i = 0; i < guardDefinitions.length; ++i) {
-    if (i > 0) name += isAnd ? ` & ` : ` | `
-    const t = guardDefinitions[i]
-    // Basic type
-    if (typeof t === `string`) name += t
-    // Guard
-    else if (typeof t === `function`) name += t.name.slice(6, -1)
-    // Literal or Array or Tuple
-    else if (Array.isArray(t)) {
-      // Literal
-      if (t[0] === literalMarker)
-        name += t[1].map(tt => (typeof tt === 'string' ? `"${tt}"` : tt)).join(' | ')
-      // Instance guard
-      else if (t[0] === instanceMarker) name += t[1].name
-      // And guard
-      else if (t[0] === andMarker)
-        name += createNameFromTypes(t.slice(1) as GuardDefinition[], true)
-      // Array
-      else if (t[0] === arrayMarker) {
-        const elTypeNames = createNameFromTypes([t[1]]).slice(6, -1)
-        const useParentheses = elTypeNames.includes(`|`)
-        name += `${useParentheses ? `(` : ``}${elTypeNames}${useParentheses ? `)` : ``}[]`
-      }
-      // Tuple
-      else name += `[` + t.map(el => createNameFromTypes([el]).slice(6, -1)).join(`, `) + `]`
-    }
-    // Record
-    else name += `{}`
-  }
-  return isAnd ? name : `Guard<${name}>`
 }
 
 const createGuard = <T extends any>(guardDefinitions: GuardDefinition[]) => {
   const guard: Guard<T> = (value: any): value is T =>
     guardDefinitions.some(guardDef => isTypeValid(guardDef, value))
-  Object.defineProperty(guard, `name`, { value: createNameFromTypes(guardDefinitions) })
   guard.or = createOr<T>(guardDefinitions)
   guard.orArrayOf = createOrArrayOf<T>(guardDefinitions)
   guard.orLiterally = createOrLiterally<T>(guardDefinitions)
@@ -272,8 +239,7 @@ export const assertThat: <T extends any>(
 ) => asserts value is T = <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => {
   if (!guard(value)) {
     throw new TypeError(
-      errorMessage ??
-        `Type of '${value?.name ?? String(value)}' does not match type guard '${guard.name}'.`
+      errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`
     )
   }
 }

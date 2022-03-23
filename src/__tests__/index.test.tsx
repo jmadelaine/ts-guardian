@@ -1,158 +1,168 @@
 import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, parserFor } from '..'
 
-const expectGuard = (guard: ReturnType<typeof is>, value: unknown, expectTrue = true) => {
-  expect(guard(value)).toBe(expectTrue)
-}
-
-const basicValues: Record<string, any> = {
-  anyValue: undefined,
-  booleanValue: true,
-  bigintValue: BigInt(0),
-  functionValue: () => undefined,
-  nullValue: null,
-  numberValue: 0,
-  objectValue: {},
-  stringValue: '',
-  symbolValue: Symbol(),
-  undefinedValue: undefined,
-  unknownValue: undefined,
-}
-const basicValueKeys = Object.keys(basicValues)
-
-const basicTypes = [
-  'any',
-  'boolean',
-  'bigint',
-  'function',
-  'null',
-  'number',
-  'object',
-  'string',
-  'symbol',
-  'undefined',
-  'unknown',
-] as const
-
 describe('is', () => {
+  // prettier-ignore
   it('guards basic types', () => {
-    for (const t of basicTypes) {
-      for (const k of basicValueKeys) {
-        expectGuard(
-          is(t),
-          basicValues[k],
-          t === 'any' ||
-            t === 'unknown' ||
-            (t === 'undefined' && (k.includes('any') || k.includes('unknown'))) ||
-            (t === 'object' && k.includes('null'))
-            ? true
-            : k.includes(t)
-        )
-      }
-    }
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(is('any'))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(is('boolean'))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(is('bigint'))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(is('function'))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(is('null'))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(is('number'))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(is('object'))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(is('string'))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(is('symbol'))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(is('undefined'))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(is('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards objects', () => {
-    // Simple object
-    expectGuard(is({}), {})
-    // Single basic prop
-    expectGuard(is({ prop1: is('string') }), { prop1: '' })
-    // Handles undefined props
-    expectGuard(is({ prop1: is('string'), prop2: is('undefined') }), { prop1: '' })
-    // Allows extra props
-    expectGuard(is({ prop1: is('string') }), { prop1: '', prop2: '' })
-    // Allows props of differing types
-    expectGuard(is({ prop1: is('string'), prop2: is('number') }), { prop1: '', prop2: 0 })
-    // Allows nested guards
-    expectGuard(is({ a: is({ b: is('string') }) }), { a: { b: '' } })
-    // Allows nested objects and basic types
-    expectGuard(is({ a: { b: 'string' } }), { a: { b: '' } })
+    // Empty object
+    expect(is({})({})).toEqual(true)
+    // Basic type props
+    expect(is({ a: 'string' })({ a: '' })).toEqual(true)
+    // Guard props
+    expect(is({ a: is('string') })({ a: '' })).toEqual(true)
+    // Undefined props
+    expect(is({ a: 'undefined' })({})).toEqual(true)
+    expect(is({ a: 'undefined' })({ a: undefined })).toEqual(true)
+    // Ignores unspecified props
+    expect(is({ a: 'string' })({ a: '', b: 0 })).toEqual(true)
+    // Props of different types
+    expect(is({ a: 'string', b: 'number' })({ a: '', b: 0 })).toEqual(true)
+    // Nested objects
+    expect(is({ a: { b: 'string' } })({ a: { b: '' } })).toEqual(true)
+    // Nested guard objects
+    expect(is({ a: is({ b: 'string' }) })({ a: { b: '' } })).toEqual(true)
   })
   it('guards tuples', () => {
-    const str = is('string')
-    const num = is('number')
-    // Simple object
-    expectGuard(is([str]), [''])
-    expectGuard(is([num]), [5])
-    expectGuard(is([str, num]), ['', 5])
-    expectGuard(is([str, num]), [5, ''], false)
-    expectGuard(is(['string']), [''])
+    // Empty tuple
+    expect(is([])([])).toEqual(true)
+    // Basic type elements
+    expect(is(['string'])([''])).toEqual(true)
+    // Guard elements
+    expect(is(['string'])([''])).toEqual(true)
+    // Undefined elements
+    expect(is(['undefined'])([])).toEqual(true)
+    expect(is(['undefined'])([undefined])).toEqual(true)
+    // Ignores unspecified elements
+    expect(is(['string'])(['', 0])).toEqual(true)
+    // Elements of different types
+    expect(is(['string', 'number'])(['', 0])).toEqual(true)
+    // Nested guard tuples
+    expect(is([is(['string'])])([['']])).toEqual(true)
   })
-  it('allows guard chaining', () => {
-    const guard = is('boolean').or('null').or('number').or('string').or('undefined')
-    expectGuard(guard, true)
-    expectGuard(guard, null)
-    expectGuard(guard, 0)
-    expectGuard(guard, '')
-    expectGuard(guard, undefined)
-    expectGuard(guard, Symbol(), false)
-    expectGuard(guard, {}, false)
+  it('chains guards', () => {
+    expect(is('string').or('number')('')).toEqual(true)
+    expect(is('string').or('number')(0)).toEqual(true)
+    expect(is('string').or('number')(true)).toEqual(false)
   })
-  it('allows guard of guards', () => {
-    const stringGuard = is('string')
-    const numberOrStringGuard = is('number').or(stringGuard)
-    expectGuard(is(stringGuard), '')
-    expectGuard(numberOrStringGuard, 0)
-    expectGuard(numberOrStringGuard, '')
+  it('accepts guard arguments', () => {
+    expect(is(is('string')).or(is('number'))('')).toEqual(true)
+    expect(is(is('string')).or(is('number'))(0)).toEqual(true)
+    expect(is(is('string')).or(is('number'))(true)).toEqual(false)
   })
-  it("allows chaining 'orArray'", () => {
-    const guard = is('string').orArrayOf('number')
-    expectGuard(guard, '')
-    expectGuard(guard, [])
-    expectGuard(guard, [1])
-    expectGuard(guard, [2, 3, 4])
-    expectGuard(guard, [5, '6', 7], false)
-  })
-  it('Does not mutate orTypes of extended guards', () => {
-    const guard = is('string')
-    expectGuard(is('string'), undefined, false)
-    expectGuard(guard, undefined, false)
-    // In v0.0.4 this would mutate guard's orTypes,
-    // meaning the next type check would return true
-    guard.or('undefined')
-    expectGuard(guard, undefined, false)
+  it('does not mutate extended guards', () => {
+    const g0 = is('string')
+    const g1 = g0.or('number')
+    expect(g0('')).toEqual(true)
+    expect(g0(0)).toEqual(false)
+    expect(g1('')).toEqual(true)
+    expect(g1(0)).toEqual(true)
   })
 })
 
 describe('isArrayOf', () => {
-  it('guards basic array types', () => {
-    for (const t of basicTypes) {
-      for (const k of basicValueKeys) {
-        expectGuard(
-          isArrayOf(t),
-          [basicValues[k]],
-          t === 'any' ||
-            t === 'unknown' ||
-            (t === 'undefined' && (k.includes('any') || k.includes('unknown'))) ||
-            (t === 'object' && k.includes('null'))
-            ? true
-            : k.includes(t)
-        )
-      }
-    }
+  // prettier-ignore
+  it('guards basic types', () => {
+      const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+      const f = false
+      expect(values.map(v => isArrayOf('any')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+      expect(values.map(v => isArrayOf('boolean')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
+      expect(values.map(v => isArrayOf('bigint')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
+      expect(values.map(v => isArrayOf('function')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
+      expect(values.map(v => isArrayOf('null')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
+      expect(values.map(v => isArrayOf('number')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
+      expect(values.map(v => isArrayOf('object')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
+      expect(values.map(v => isArrayOf('string')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
+      expect(values.map(v => isArrayOf('symbol')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
+      expect(values.map(v => isArrayOf('undefined')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
+      expect(values.map(v => isArrayOf('unknown')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards objects', () => {
-    // Simple object
-    expectGuard(isArrayOf({}), [{}])
-    // Single basic prop
-    expectGuard(isArrayOf({ prop1: is('string') }), [{ prop1: '' }])
+    expect(isArrayOf({ a: 'string' })([{ a: '' }])).toEqual(true)
   })
-  it('allows guard chaining', () => {
-    const guard = isArrayOf('boolean').or('null').orArrayOf('number')
-    expectGuard(guard, [true, false])
-    expectGuard(guard, null)
-    expectGuard(guard, [0, 1, 2])
-    expectGuard(guard, [])
-    expectGuard(guard, [true, 0, 1, false], false)
-    expectGuard(guard, '', false)
-    expectGuard(guard, 0, false)
+  it('guards tuples', () => {
+    expect(isArrayOf(['string'])([['']])).toEqual(true)
   })
-  it('allows guard of guards', () => {
-    const guard = isArrayOf(is('boolean').or('number'))
-    expectGuard(guard, [true, false])
-    expectGuard(guard, [0, 1, 2])
-    expectGuard(guard, [])
-    expectGuard(guard, [true, 0, 1, false])
-    expectGuard(guard, [''], false)
-    expectGuard(guard, 0, false)
+  it('chains guards', () => {
+    expect(isArrayOf('string').orArrayOf('number')([''])).toEqual(true)
+    expect(isArrayOf('string').orArrayOf('number')([0])).toEqual(true)
+    expect(isArrayOf('string').orArrayOf('number')([true])).toEqual(false)
+  })
+  it('accepts guard arguments', () => {
+    expect(isArrayOf(is('string')).orArrayOf(is('number'))([''])).toEqual(true)
+    expect(isArrayOf(is('string')).orArrayOf(is('number'))([0])).toEqual(true)
+    expect(isArrayOf(is('string')).orArrayOf(is('number'))([true])).toEqual(false)
+  })
+  it('does not mutate extended guards', () => {
+    const g0 = isArrayOf('string')
+    const g1 = g0.orArrayOf('number')
+    expect(g0([''])).toEqual(true)
+    expect(g0([0])).toEqual(false)
+    expect(g1([''])).toEqual(true)
+    expect(g1([0])).toEqual(true)
+  })
+})
+
+describe('isLiterally', () => {
+  it('handles strings', () => {
+    expect(isLiterally('a')('a')).toEqual(true)
+    expect(isLiterally('a')('b')).toEqual(false)
+    expect(isLiterally('a').orLiterally('b')('a')).toEqual(true)
+    expect(isLiterally('a').orLiterally('b')('b')).toEqual(true)
+    expect(isLiterally('a').orLiterally('b')('c')).toEqual(false)
+  })
+  it('handles numbers', () => {
+    expect(isLiterally(5)(5)).toEqual(true)
+    expect(isLiterally(5)(6)).toEqual(false)
+    expect(isLiterally(5).orLiterally(6)(5)).toEqual(true)
+    expect(isLiterally(5).orLiterally(6)(6)).toEqual(true)
+    expect(isLiterally(5).orLiterally(6)(7)).toEqual(false)
+  })
+  it('handles booleans', () => {
+    expect(isLiterally(true)(true)).toEqual(true)
+    expect(isLiterally(true)(false)).toEqual(false)
+  })
+  it('handles literal strings instead of converting to basic types', () => {
+    expect(isLiterally('string')('string')).toEqual(true)
+    expect(isLiterally('string')('a')).toEqual(false)
+  })
+  it('handles multiple arguments', () => {
+    expect(isLiterally('a', 1, true)('a')).toEqual(true)
+    expect(isLiterally('a', 1, true)(1)).toEqual(true)
+    expect(isLiterally('a', 1, true)(true)).toEqual(true)
+    expect(isLiterally('a', 1, true)('b')).toEqual(false)
+    expect(isLiterally('a', 1, true)(2)).toEqual(false)
+    expect(isLiterally('a', 1, true)(false)).toEqual(false)
+  })
+})
+
+describe('instanceOf', () => {
+  it('gaurds constructor objects', () => {
+    expect(isInstanceOf(Object)({})).toEqual(true)
+    expect(isInstanceOf(String)('')).toEqual(false)
+    expect(isInstanceOf(String)(String())).toEqual(false)
+    expect(isInstanceOf(String)(new String())).toEqual(true)
+    expect(isInstanceOf(Date)(new Date())).toEqual(true)
+    expect(isInstanceOf(Date)(Date)).toEqual(false)
+    expect(isInstanceOf(RegExp)(/0/)).toEqual(true)
+    expect(isInstanceOf(Date).orInstanceOf(RegExp)(new Date())).toEqual(true)
+    expect(isInstanceOf(Date).orInstanceOf(RegExp)(new RegExp('0'))).toEqual(true)
+    class Person {}
+    expect(isInstanceOf(Person)(new Person())).toEqual(true)
+    expect(isInstanceOf(Person)(Person)).toEqual(false)
   })
 })
 
@@ -193,105 +203,25 @@ describe('parser', () => {
   })
 })
 
-describe('isLiterally', () => {
-  it('handles strings', () => {
-    expectGuard(isLiterally('hello'), 'hello')
-    expectGuard(isLiterally('hello'), 'cool', false)
-    expectGuard(isLiterally('hello').orLiterally('cool'), 'hello')
-    expectGuard(isLiterally('hello').orLiterally('cool'), 'cool')
-    expectGuard(isLiterally('hello').orLiterally('cool'), 'nope', false)
-  })
-  it('handles numbers', () => {
-    expectGuard(isLiterally(5), 5)
-    expectGuard(isLiterally(5), 6, false)
-  })
-  it('handles booleans', () => {
-    expectGuard(isLiterally(true), true)
-    expectGuard(isLiterally(true), false, false)
-  })
-  it('handles string versions of basic types', () => {
-    expectGuard(isLiterally('true'), 'true')
-    expectGuard(isLiterally('true'), true, false)
-    expectGuard(isLiterally('string'), 'string')
-    expectGuard(isLiterally('string'), 'strin', false)
-  })
-  it('handles multiple arguments', () => {
-    expectGuard(isLiterally('a', 'b', 1), 'a')
-    expectGuard(isLiterally('a', 'b', 1), 'b')
-    expectGuard(isLiterally('a', 'b', 1), 1)
-    expectGuard(isLiterally('a', 'b', 1), 'c', false)
-    expectGuard(isLiterally('a', 'b', 1), 2, false)
-  })
-})
-
 describe('assertThat', () => {
   it('asserts types', () => {
     const isString = is('string')
-    expect(() => assertThat(5, isString)).toThrowError(
-      "Type of '5' does not match type guard 'Guard<string>'."
-    )
+    expect(() => assertThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
+    const isNumber = is('number')
+    expect(() => assertThat(5, isNumber)).not.toThrow()
+  })
+  it('asserts types with custom error message', () => {
+    const isString = is('string')
+    expect(() => assertThat(5, isString, 'woops')).toThrowError('woops')
     const isNumber = is('number')
     expect(() => assertThat(5, isNumber)).not.toThrow()
   })
 })
 
-it('has descriptive guard names', () => {
-  expect(is('any').name).toBe('Guard<any>')
-  expect(is('boolean').name).toBe('Guard<boolean>')
-  expect(is('bigint').name).toBe('Guard<bigint>')
-  expect(is('function').name).toBe('Guard<function>')
-  expect(is('null').name).toBe('Guard<null>')
-  expect(is('number').name).toBe('Guard<number>')
-  expect(is('object').name).toBe('Guard<object>')
-  expect(is('string').name).toBe('Guard<string>')
-  expect(is('symbol').name).toBe('Guard<symbol>')
-  expect(is('undefined').name).toBe('Guard<undefined>')
-  expect(is('unknown').name).toBe('Guard<unknown>')
-  expect(is('string').or('number').name).toBe('Guard<string | number>')
-
-  expect(isLiterally('hello').name).toBe('Guard<"hello">')
-  expect(isLiterally(5).name).toBe('Guard<5>')
-  expect(isLiterally(true).name).toBe('Guard<true>')
-  expect(isLiterally('a', 'b', 1, true).name).toBe('Guard<"a" | "b" | 1 | true>')
-
-  expect(isArrayOf('string').or('number').name).toBe('Guard<string[] | number>')
-  expect(isArrayOf('string').orArrayOf('number').name).toBe('Guard<string[] | number[]>')
-  expect(isArrayOf(is('string').or('number')).name).toBe('Guard<(string | number)[]>')
-
-  expect(is([is('string')]).name).toBe('Guard<[string]>')
-  expect(is([is('string'), is('number')]).name).toBe('Guard<[string, number]>')
-  expect(is([isArrayOf('string').or([is('boolean')]), is('number')]).name).toBe(
-    'Guard<[string[] | [boolean], number]>'
-  )
-
-  expect(is({}).name).toBe('Guard<{}>')
-
-  expect(isInstanceOf(Date).name).toBe('Guard<Date>')
-
-  // TODO: Names guards based on object member guards, i.e. Guard<{ something: string; }>
-  expect(is({ something: is('string') }).name).toBe('Guard<{}>')
-  expect(is({ a: is('string') }).and({ b: is('string') }).name).toBe('Guard<{} & {}>')
-})
-
-describe('instanceOf', () => {
-  it('gaurds constructor objects', () => {
-    expectGuard(isInstanceOf(Object), {})
-    expectGuard(isInstanceOf(String), '', false)
-    expectGuard(isInstanceOf(Date), new Date())
-    expectGuard(isInstanceOf(Date), Date, false)
-    expectGuard(isInstanceOf(RegExp), /0/)
-    expectGuard(isInstanceOf(Date).orInstanceOf(RegExp), new Date())
-    expectGuard(isInstanceOf(Date).orInstanceOf(RegExp), new RegExp('0'))
-    class Person {}
-    expectGuard(isInstanceOf(Person), new Person())
-  })
-})
-
 describe('and', () => {
   it('intersects types', () => {
-    expectGuard(is({ a: is('string') }).and({ b: is('number') }), { a: '', b: 0 })
+    expect(is({ a: is('string') }).and({ b: is('number') })({ a: '', b: 0 })).toEqual(true)
   })
-
   it('intersects complex types', () => {
     const isA = is({ a: is('string') })
     const isB = is({ b: is('string') })
@@ -300,12 +230,12 @@ describe('and', () => {
     const value1 = { a: '', b: '' }
     const value2 = { c: '' }
     const value3 = { c: '', d: '' }
-    expectGuard(isA.and(isB).or(isC), value1)
-    expectGuard(isA.and(isB).or(isC), value2)
-    expectGuard(isA.or(isB).and(isC), value1)
-    expectGuard(isA.or(isB).and(isC), value2, false)
-    expectGuard(isA.and(isB).or(isC).or(isD), value2)
-    expectGuard(isA.and(isB).or(isC).and(isD), value2, false)
-    expectGuard(isA.and(isB).or(isC).and(isD), value3)
+    expect(isA.and(isB).or(isC)(value1)).toEqual(true)
+    expect(isA.and(isB).or(isC)(value2)).toEqual(true)
+    expect(isA.or(isB).and(isC)(value1)).toEqual(true)
+    expect(isA.or(isB).and(isC)(value2)).toEqual(false)
+    expect(isA.and(isB).or(isC).or(isD)(value2)).toEqual(true)
+    expect(isA.and(isB).or(isC).and(isD)(value2)).toEqual(false)
+    expect(isA.and(isB).or(isC).and(isD)(value3)).toEqual(true)
   })
 })

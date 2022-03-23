@@ -359,7 +359,7 @@ import { is, assertThat } from 'ts-guardian'
 const value = getSomeUnknownValue()
 
 // Throws an error if type of value is not 'string'
-// Error message: Type of 'value' does not match type guard 'Guard<string>'.
+// Error message: Type of 'value' does not match type guard.
 assertThat(value, is('string'))
 
 // Otherwise, type of value is 'string'
