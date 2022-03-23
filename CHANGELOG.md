@@ -1,5 +1,9 @@
 # Changelog
 
+[1.6.1] 2022-03-21
+
+- Remove guard names
+
 [1.6.0] 2022-03-21
 
 - Objects and Tuple guards accept Basic Types
