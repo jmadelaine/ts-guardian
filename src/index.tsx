@@ -1,48 +1,34 @@
-type BasicType =
-  | `any`
-  | `boolean`
-  | `bigint`
-  | `function`
-  | `null`
-  | `number`
-  | `object`
-  | `string`
-  | `symbol`
-  | `undefined`
-  | `unknown`
+type Literal = string | number | boolean
+type Instance = new (...args: any[]) => any
 
-type WrappedLiteralType<T extends (string | number | boolean)[]> = ['l', T]
-type EveryArrayElementType = ['a', BasicType | GuardRecord | GuardTuple | Guard<any>]
-type AndGuardDefinitionType = ['&', ...GuardDefinition[]]
-type InstanceGuardDefinitionType = ['i', new (...args: any[]) => any]
-interface GuardRecord
-  extends Record<PropertyKey, BasicType | GuardRecord | GuardTuple | Guard<any>> {}
-type GuardTuple = [] | (BasicType | GuardRecord | Guard<any>)[]
+type BasicTypeDef = `any` | `boolean` | `bigint` | `function` | `null` | `number` | `object` | `string` | `symbol` | `undefined` | `unknown`
+interface ObjectTypeDef extends Record<PropertyKey, TypeDef> {}
+// Nested TupleTypeDefs cause TypeScript errors, so deliberately not allowing that in the type.
+type TupleTypeDef = [] | (BasicTypeDef | ObjectTypeDef | Guard<any>)[]
 
-// prettier-ignore
-export type Guard<T extends unknown> = {
-  (value: unknown): value is T
-  or: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(t: U) => Guard<T | UnpackType<U>>
-  and: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(t: U) => Guard<T & UnpackType<U>>
-  orArrayOf: <U extends BasicType | GuardRecord | Guard<any> | GuardTuple>(t: U) => Guard<T | UnpackType<U>[]>
-  orLiterally: <U extends (string | number | boolean)[]>(...t: U) => Guard<T | UnpackType<WrappedLiteralType<U>>>
-  orInstanceOf: <U extends new (...args: any[]) => any>(t: U) => Guard<T | UnpackType<U>>
-}
+type TypeDef = BasicTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
 
-export type GuardType<T extends Guard<any>> = T extends (inp: unknown) => inp is infer U ? U : never
+// Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
+// an array of the passed type definition. We need to remember these implied type definitions during validation,
+// so internally, these type definitions are stored as a tuple [<implied_type_definition>, <passed_type_definition>].
+// passed_type_definition is the argument the user passed to the constructor function, while implied_type_definition is
+// indicated by one of the following markers:
+const arrayMarker = `a`
+const recordMarker = `r`
+const literalMarker = `l`
+const instanceMarker = `i`
+const andMarker = `&`
 
-type GuardDefinition =
-  | BasicType
-  | WrappedLiteralType<(string | number | boolean)[]>
-  | EveryArrayElementType
-  | AndGuardDefinitionType
-  | InstanceGuardDefinitionType
-  | GuardRecord
-  | GuardTuple
-  | Guard<any>
+type LiteralTypeDef = [typeof literalMarker, ...Literal[]]
+type ArrayTypeDef = [typeof arrayMarker, TypeDef]
+type RecordTypeDef = [typeof recordMarker, TypeDef]
+type InstanceTypeDef = [typeof instanceMarker, Instance]
+type AndTypeDef = [typeof andMarker, ...InternalTypeDef[]]
+
+type InternalTypeDef = ArrayTypeDef | RecordTypeDef | LiteralTypeDef | InstanceTypeDef | AndTypeDef | TypeDef
 
 // prettier-ignore
-type UnpackBasicType<T extends BasicType> =
+type BasicTypeDefType<T extends BasicTypeDef> =
     T extends `any` ? any
   : T extends `boolean` ? boolean
   : T extends `bigint` ? bigint
@@ -56,22 +42,28 @@ type UnpackBasicType<T extends BasicType> =
   : T extends `unknown` ? unknown
   : never
 
-// prettier-ignore
-type UnpackType<T extends unknown> =
-    T extends BasicType ? UnpackBasicType<T>
-  : T extends WrappedLiteralType<(string | number | boolean)[]> ? T[1][number]
-  : T extends GuardRecord | GuardTuple ? { [key in keyof T]: UnpackType<T[key]> }
-  : T extends Guard<infer V> ? V
-  : T extends new (...args: any[]) => infer V ? V
+type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
+  ? V
+  : TTypeDef extends BasicTypeDef
+  ? BasicTypeDefType<TTypeDef>
+  : TTypeDef extends ObjectTypeDef | TupleTypeDef
+  ? { [key in keyof TTypeDef]: TypeDefType<TTypeDef[key]> }
   : never
 
-const arrayMarker = `a`
-const literalMarker = `l`
-const andMarker = `&`
-const instanceMarker = 'i'
+export type Guard<T extends unknown> = {
+  (value: unknown): value is T
+  or: <U extends TypeDef>(t: U) => Guard<T | TypeDefType<U>>
+  and: <U extends TypeDef>(t: U) => Guard<T & TypeDefType<U>>
+  orArrayOf: <U extends TypeDef>(t: U) => Guard<T | TypeDefType<U>[]>
+  orRecordOf: <U extends TypeDef>(t: U) => Guard<T | Record<PropertyKey, TypeDefType<U>>>
+  orLiterally: <U extends Literal[]>(...t: U) => Guard<T | U[number]>
+  orInstanceOf: <U extends Instance>(t: U) => Guard<T | (U extends new (...args: any[]) => infer V ? V : never)>
+}
+
+export type GuardType<T extends Guard<any>> = T extends (value: unknown) => value is infer U ? U : never
 
 // prettier-ignore
-const getBasicTypeGuard = (t: BasicType) => {
+const getBasicTypeGuard = (t: BasicTypeDef) => {
   switch (t) {
     case `any`: return (_: unknown): _ is any => true
     case `boolean`: return (v: unknown): v is boolean => typeof v === `boolean`
@@ -87,47 +79,61 @@ const getBasicTypeGuard = (t: BasicType) => {
   }
 }
 
-const isTypeValid = (t: GuardDefinition, value: unknown): boolean => {
+const isLiteralTypeGuard = (t: InternalTypeDef): t is LiteralTypeDef => Array.isArray(t) && t[0] === literalMarker
+const isLiteralTypeValid = ([_, ...t]: LiteralTypeDef, value: unknown) => t.includes(value as Literal)
+
+const isInstanceTypeGuard = (t: InternalTypeDef): t is InstanceTypeDef => Array.isArray(t) && t[0] === instanceMarker
+const isInstanceTypeValid = ([_, t]: InstanceTypeDef, value: unknown) => value instanceof t
+
+const isAndTypeGuard = (t: InternalTypeDef): t is AndTypeDef => Array.isArray(t) && t[0] === andMarker
+const isAndTypeValid = ([_, ...t]: AndTypeDef, value: unknown) => t.every(g => isTypeValid(g, value))
+
+const isArrayTypeGuard = (t: InternalTypeDef): t is ArrayTypeDef => Array.isArray(t) && t[0] === arrayMarker
+const isArrayTypeValid = ([_, t]: ArrayTypeDef, value: unknown) => Array.isArray(value) && value.every((el: unknown) => isTypeValid(t, el))
+
+const isTupleTypeValid = (t: TupleTypeDef, value: unknown) => Array.isArray(value) && t.every((g, i) => isTypeValid(g, value[i]))
+
+const isRecordTypeGuard = (t: InternalTypeDef): t is RecordTypeDef => Array.isArray(t) && t[0] === recordMarker
+const isRecordTypeValid = ([_, t]: RecordTypeDef, value: unknown) =>
+  typeof value === `object` && value !== null && Object.values(value).every(v => isTypeValid(t, v))
+
+const isObjectTypeValid = (t: unknown, value: unknown) =>
+  typeof t === `object` &&
+  t !== null &&
+  typeof value === `object` &&
+  value !== null &&
+  Object.keys(t).every(k => isTypeValid((t as ObjectTypeDef)[k], (value as Record<PropertyKey, unknown>)[k]))
+
+const isTypeValid = (t: InternalTypeDef, value: unknown): boolean => {
   try {
     // Basic type
     if (typeof t === `string`) return getBasicTypeGuard(t)(value)
     // Guard
     if (typeof t === 'function') return t(value)
-    // "Literal" or "And" or "Instance" or "Array" or "Tuple" guard
-    if (Array.isArray(t)) {
-      // Literal
-      if (t[0] === literalMarker) return (t[1] as unknown[]).includes(value)
-      // Instance
-      if (t[0] === instanceMarker) return value instanceof t[1]
-      // And
-      if (t[0] === andMarker) return t.slice(1).every(g => isTypeValid(g as GuardDefinition, value))
-      if (!Array.isArray(value)) return false
-      // Array
-      if (t[0] === arrayMarker) return value.every(el => isTypeValid(t[1]!, el))
-      // Tuple
-      for (let i = 0; i < t.length; ++i) {
-        if (!isTypeValid((t as any[])[i], value[i])) return false
-      }
-      return true
-    }
+    // Array
+    if (isArrayTypeGuard(t)) return isArrayTypeValid(t, value)
     // Record
-    if (typeof t !== `object` || t === null || typeof value !== `object` || value === null)
-      return false
-    for (const k of Object.keys(t)) {
-      if (!isTypeValid((t as GuardRecord)[k], (value as Record<PropertyKey, unknown>)[k]))
-        return false
-    }
-    return true
+    if (isRecordTypeGuard(t)) return isRecordTypeValid(t, value)
+    // Literal
+    if (isLiteralTypeGuard(t)) return isLiteralTypeValid(t, value)
+    // Instance
+    if (isInstanceTypeGuard(t)) return isInstanceTypeValid(t, value)
+    // And
+    if (isAndTypeGuard(t)) return isAndTypeValid(t, value)
+    // Tuple
+    if (Array.isArray(t)) return isTupleTypeValid(t as TupleTypeDef, value)
+    // Object
+    return isObjectTypeValid(t, value)
   } catch {
     return false
   }
 }
 
-const createGuard = <T extends any>(guardDefinitions: GuardDefinition[]) => {
-  const guard: Guard<T> = (value: any): value is T =>
-    guardDefinitions.some(guardDef => isTypeValid(guardDef, value))
+const createGuard = <T extends any>(guardDefinitions: InternalTypeDef[]) => {
+  const guard: Guard<T> = (value: any): value is T => guardDefinitions.some(g => isTypeValid(g, value))
   guard.or = createOr<T>(guardDefinitions)
   guard.orArrayOf = createOrArrayOf<T>(guardDefinitions)
+  guard.orRecordOf = createOrRecordOf<T>(guardDefinitions)
   guard.orLiterally = createOrLiterally<T>(guardDefinitions)
   guard.orInstanceOf = createOrInstanceOf<T>(guardDefinitions)
   guard.and = createAnd<T>(guardDefinitions)
@@ -135,63 +141,50 @@ const createGuard = <T extends any>(guardDefinitions: GuardDefinition[]) => {
 }
 
 const createOr =
-  <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) =>
-  <TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
-    t: TNew
-  ): Guard<TPrev | UnpackType<TNew>> =>
-    createGuard<TPrev | UnpackType<TNew>>([...prevGuardDefinitions, t])
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends TypeDef>(t: TNew) =>
+    createGuard<TPrev | TypeDefType<TNew>>([...prevTypeDefinitions, t])
 
 const createAnd =
-  <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) =>
-  <TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
-    t: TNew
-  ): Guard<TPrev & UnpackType<TNew>> => {
-    const lastGuardDef = prevGuardDefinitions.slice(-1)[0]
-    return createGuard<TPrev & UnpackType<TNew>>([
-      ...prevGuardDefinitions.slice(0, -1),
-      Array.isArray(lastGuardDef) && lastGuardDef[0] === andMarker
-        ? [...lastGuardDef, t]
-        : [andMarker, lastGuardDef, t],
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends TypeDef>(t: TNew) => {
+    const lastGuardDef = prevTypeDefinitions.slice(-1)[0]
+    return createGuard<TPrev & TypeDefType<TNew>>([
+      ...prevTypeDefinitions.slice(0, -1),
+      Array.isArray(lastGuardDef) && lastGuardDef[0] === andMarker ? [...lastGuardDef, t] : [andMarker, lastGuardDef, t],
     ])
   }
 
 const createOrArrayOf =
-  <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) =>
-  <TNew extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
-    t: TNew
-  ): Guard<TPrev | UnpackType<TNew>[]> =>
-    createGuard<TPrev | UnpackType<TNew>[]>([...prevGuardDefinitions, [arrayMarker, t]])
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends TypeDef>(t: TNew) =>
+    createGuard<TPrev | TypeDefType<TNew>[]>([...prevTypeDefinitions, [arrayMarker, t]])
+
+const createOrRecordOf =
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends TypeDef>(t: TNew) =>
+    createGuard<TPrev | Record<PropertyKey, TypeDefType<TNew>>>([...prevTypeDefinitions, [recordMarker, t]])
 
 const createOrLiterally =
-  <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) =>
-  <TNew extends (string | number | boolean)[]>(
-    ...t: TNew
-  ): Guard<TPrev | UnpackType<WrappedLiteralType<TNew>>> =>
-    createGuard<TPrev | UnpackType<WrappedLiteralType<TNew>>>([
-      ...prevGuardDefinitions,
-      [literalMarker, t],
-    ])
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends Literal[]>(...t: TNew) =>
+    createGuard<TPrev | TNew[number]>([...prevTypeDefinitions, [literalMarker, ...t]])
 
 const createOrInstanceOf =
-  <TPrev extends any>(prevGuardDefinitions: GuardDefinition[]) =>
-  <TNew extends new (...args: any[]) => any>(t: TNew): Guard<TPrev | UnpackType<TNew>> =>
-    createGuard<TPrev | UnpackType<TNew>>([...prevGuardDefinitions, [instanceMarker, t]])
+  <TPrev extends any>(prevTypeDefinitions: InternalTypeDef[]) =>
+  <TNew extends new (...args: any[]) => any>(t: TNew) =>
+    createGuard<TPrev | (TNew extends new (...args: any[]) => infer V ? V : never)>([...prevTypeDefinitions, [instanceMarker, t]])
 
-export const is = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
-  t: T
-): Guard<UnpackType<T>> => createGuard<UnpackType<T>>([t])
+export const is = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T>>([t])
 
-export const isArrayOf = <T extends BasicType | GuardRecord | GuardTuple | Guard<any>>(
-  t: T
-): Guard<UnpackType<T>[]> => createGuard<UnpackType<T>[]>([[arrayMarker, t]])
+export const isArrayOf = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T>[]>([[arrayMarker, t]])
 
-export const isLiterally = <T extends (string | number | boolean)[]>(
-  ...t: T
-): Guard<UnpackType<WrappedLiteralType<T>>> =>
-  createGuard<UnpackType<WrappedLiteralType<T>>>([[literalMarker, t]])
+export const isRecordOf = <T extends TypeDef>(t: T) => createGuard<Record<PropertyKey, TypeDefType<T>>>([[recordMarker, t]])
 
-export const isInstanceOf = <T extends new (...args: any[]) => any>(t: T) =>
-  createGuard<UnpackType<T>>([[instanceMarker, t]])
+export const isLiterally = <T extends Literal[]>(...t: T) => createGuard<T[number]>([[literalMarker, ...t]])
+
+export const isInstanceOf = <T extends Instance>(t: T) =>
+  createGuard<T extends new (...args: any[]) => infer V ? V : never>([[instanceMarker, t]])
 
 export const isBoolean = is(`boolean`)
 export const isBigint = is(`bigint`)
@@ -217,23 +210,13 @@ export const isSymbolOrUndefined = isSymbol.or(`undefined`)
 
 export const parserFor =
   <T extends any = undefined, TGuard extends Guard<any> = Guard<T>>(guard: TGuard) =>
-  (
-    value: any
-  ): T extends undefined
-    ? GuardType<TGuard> | undefined
-    : GuardType<TGuard> extends T
-    ? T | undefined
-    : never =>
+  (value: any): T extends undefined ? GuardType<TGuard> | undefined : GuardType<TGuard> extends T ? T | undefined : never =>
     guard(value) ? value : undefined
 
-export const assertThat: <T extends any>(
+export const assertThat: <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => asserts value is T = <T extends any>(
   value: any,
   guard: Guard<T>,
   errorMessage?: string
-) => asserts value is T = <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => {
-  if (!guard(value)) {
-    throw new TypeError(
-      errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`
-    )
-  }
+) => {
+  if (!guard(value)) throw new TypeError(errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`)
 }

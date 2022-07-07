@@ -1,4 +1,4 @@
-import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, parserFor } from '..'
+import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor } from '..'
 
 describe('is', () => {
   // prettier-ignore
@@ -106,6 +106,9 @@ describe('isArrayOf', () => {
     expect(isArrayOf(is('string')).orArrayOf(is('number'))([0])).toEqual(true)
     expect(isArrayOf(is('string')).orArrayOf(is('number'))([true])).toEqual(false)
   })
+  it('accepts complex guard arguments', () => {
+    expect(isArrayOf(is('string').or('number'))(['', 0])).toEqual(true)
+  })
   it('does not mutate extended guards', () => {
     const g0 = isArrayOf('string')
     const g1 = g0.orArrayOf('number')
@@ -113,6 +116,52 @@ describe('isArrayOf', () => {
     expect(g0([0])).toEqual(false)
     expect(g1([''])).toEqual(true)
     expect(g1([0])).toEqual(true)
+  })
+})
+
+describe('isRecordOf', () => {
+  // prettier-ignore
+  it('guards basic types', () => {
+      const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+      const f = false
+      expect(values.map(v => isRecordOf('any')({ k: v}))).toEqual([true, true, true, true, true, true, true, true, true])
+      expect(values.map(v => isRecordOf('boolean')({ k: v}))).toEqual([true, f, f, f, f, f, f, f, f])
+      expect(values.map(v => isRecordOf('bigint')({ k: v}))).toEqual([f, true, f, f, f, f, f, f, f])
+      expect(values.map(v => isRecordOf('function')({ k: v}))).toEqual([f, f, true, f, f, f, f, f, f])
+      expect(values.map(v => isRecordOf('null')({ k: v}))).toEqual([f, f, f, true, f, f, f, f, f])
+      expect(values.map(v => isRecordOf('number')({ k: v}))).toEqual([f, f, f, f, true, f, f, f, f])
+      expect(values.map(v => isRecordOf('object')({ k: v}))).toEqual([f, f, f, true, f, true, f, f, f])
+      expect(values.map(v => isRecordOf('string')({ k: v}))).toEqual([f, f, f, f, f, f, true, f, f])
+      expect(values.map(v => isRecordOf('symbol')({ k: v}))).toEqual([f, f, f, f, f, f, f, true, f])
+      expect(values.map(v => isRecordOf('undefined')({ k: v}))).toEqual([f, f, f, f, f, f, f, f, true])
+      expect(values.map(v => isRecordOf('unknown')({ k: v}))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+  it('guards objects', () => {
+    expect(isRecordOf({ a: 'string' })({ k: { a: '' } })).toEqual(true)
+  })
+  it('guards tuples', () => {
+    expect(isRecordOf(['string'])({ k: [''] })).toEqual(true)
+  })
+  it('chains guards', () => {
+    expect(isRecordOf('string').orRecordOf('number')({ k: '' })).toEqual(true)
+    expect(isRecordOf('string').orRecordOf('number')({ k: 0 })).toEqual(true)
+    expect(isRecordOf('string').orRecordOf('number')({ k: true })).toEqual(false)
+  })
+  it('accepts guard arguments', () => {
+    expect(isRecordOf(is('string')).orRecordOf(is('number'))({ k: '' })).toEqual(true)
+    expect(isRecordOf(is('string')).orRecordOf(is('number'))({ k: 0 })).toEqual(true)
+    expect(isRecordOf(is('string')).orRecordOf(is('number'))({ k: true })).toEqual(false)
+  })
+  it('accepts complex guard arguments', () => {
+    expect(isRecordOf(is('string').or('number'))({ k: '', l: 0 })).toEqual(true)
+  })
+  it('does not mutate extended guards', () => {
+    const g0 = isRecordOf('string')
+    const g1 = g0.orRecordOf('number')
+    expect(g0({ k: '' })).toEqual(true)
+    expect(g0({ k: 0 })).toEqual(false)
+    expect(g1({ k: '' })).toEqual(true)
+    expect(g1({ k: 0 })).toEqual(true)
   })
 })
 

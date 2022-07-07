@@ -151,10 +151,23 @@ import { is, isArrayOf } from 'ts-guardian'
 const isStrArr = isArrayOf('string') // guard for 'string[]'
 const isStrOrNumArr = isArrayOf(is('string').or('number')) // guard for '(string | number)[]'
 const isStrArrOrNumArr = isArrayOf('string').orArrayOf('number') // guard for 'string[] | number[]'
-const isStrArrOrUndefined = is('undefined').orArrayOf('string') // guard for 'string[] | undefined'
 ```
 
 > Note the difference between `isArrayOf(is('string').or('number'))` which creates a guard for `(string | number)[]`, and `isArrayOf('string').orArrayOf('number')` which creates a guard for `string[] | number[]`.
+
+<br />
+
+### Record types
+
+To check that every value in an object is of a specific type, use the `isRecordOf` function and the `orRecordOf` method:
+
+```ts
+import { is, isRecordOf } from 'ts-guardian'
+
+const isStrRecord = isRecordOf('string') // guard for 'Record<PropertyKey, string>'
+const isStrOrNumRecord = isRecordOf(is('string').or('number')) // guard for 'Record<PropertyKey, string | number>'
+const isStrRecordOrNumRecord = isRecordOf('string').orRecordOf('number') // guard for 'Record<PropertyKey, string> | Record<PropertyKey, number>'
+```
 
 <br />
 
