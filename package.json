@@ -1,7 +1,7 @@
 {
   "name": "ts-guardian",
-  "version": "1.7.0",
-  "description": "Functional, composable, reliable type guards",
+  "version": "1.8.0",
+  "description": "Declarative, composable type guards",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "sideEffects": false,
