@@ -1,5 +1,9 @@
 # Changelog
 
+[1.8.0] 2022-07-07
+
+- Add `isRecordOf`
+
 [1.7.0] 2022-07-06
 
 - Remove Date and RegExp helper guards
