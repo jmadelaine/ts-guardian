@@ -1,5 +1,9 @@
 # Changelog
 
+[1.7.0] 2022-07-06
+
+- Remove Date and RegExp helper guards
+
 [1.6.1] 2022-03-21
 
 - Remove guard names
