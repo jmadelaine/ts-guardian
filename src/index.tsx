@@ -213,6 +213,8 @@ export const parserFor =
   (value: any): T extends undefined ? GuardType<TGuard> | undefined : GuardType<TGuard> extends T ? T | undefined : never =>
     guard(value) ? value : undefined
 
+// Change 'assertThat' to 'confirmThat'
+// Assert means to force something to be something else, whereas confirm suggests that we must pass the test to continue
 export const assertThat: <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => asserts value is T = <T extends any>(
   value: any,
   guard: Guard<T>,
