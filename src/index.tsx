@@ -1,10 +1,23 @@
 type Literal = string | number | boolean
 type Instance = new (...args: any[]) => any
 type BasicTypeDef = `any` | `boolean` | `bigint` | `function` | `null` | `number` | `object` | `string` | `symbol` | `undefined` | `unknown`
+type BasicArrayTypeDef =
+  | `any[]`
+  | `boolean[]`
+  | `bigint[]`
+  | `function[]`
+  | `null[]`
+  | `number[]`
+  | `object[]`
+  | `string[]`
+  | `symbol[]`
+  | `undefined[]`
+  | `unknown[]`
+
 interface ObjectTypeDef extends Record<PropertyKey, TypeDef> {}
 // Nested TupleTypeDefs cause TypeScript errors, so deliberately not allowing that in the type.
-type TupleTypeDef = [] | (BasicTypeDef | ObjectTypeDef | Guard<any>)[]
-type TypeDef = BasicTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
+type TupleTypeDef = [] | (BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | Guard<any>)[]
+type TypeDef = BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
 
 // Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
 // an array of the passed type definition. We need to remember these implied type definitions during validation,
@@ -39,10 +52,14 @@ type BasicTypeDefType<T extends BasicTypeDef> =
   : T extends `unknown` ? unknown
   : never
 
+type StripArrayBrackets<T extends string> = T extends `${infer U}[]` ? U : never
+
 type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
   ? V
   : TTypeDef extends BasicTypeDef
   ? BasicTypeDefType<TTypeDef>
+  : TTypeDef extends BasicArrayTypeDef
+  ? BasicTypeDefType<StripArrayBrackets<TTypeDef>>[]
   : TTypeDef extends ObjectTypeDef | TupleTypeDef
   ? { [key in keyof TTypeDef]: TypeDefType<TTypeDef[key]> }
   : never
@@ -103,8 +120,12 @@ const isObjectTypeValid = (t: unknown, value: unknown) =>
 
 const isTypeValid = (t: InternalTypeDef, value: unknown): boolean => {
   try {
-    // Basic type
-    if (typeof t === `string`) return getBasicTypeGuard(t)(value)
+    if (typeof t === `string`) {
+      // Basic array type
+      if (t.endsWith('[]')) return isArrayTypeValid(['a', t.slice(0, -2)] as ArrayTypeDef, value)
+      // Basic type
+      return getBasicTypeGuard(t as BasicTypeDef)(value)
+    }
     // Guard
     if (typeof t === 'function') return t(value)
     // Array

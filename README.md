@@ -151,6 +151,15 @@ const isStrArrOrNumArr = isArrayOf('string').orArrayOf('number') // guard for 's
 
 > Note the difference between `isArrayOf(is('string').or('number'))` which creates a guard for `(string | number)[]`, and `isArrayOf('string').orArrayOf('number')` which creates a guard for `string[] | number[]`.
 
+For basic array types, you can pass a string to the `is` function instead of using `isArrayOf`:
+
+```ts
+import { is, isArrayOf } from 'ts-guardian'
+
+const isStrArr = is('string[]') // guard for 'string[]'
+const isStrArrOrNumArr = is('string[]').or('number[]') // guard for 'string[] | number[]'
+```
+
 <br />
 
 ### Record types

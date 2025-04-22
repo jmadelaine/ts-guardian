@@ -17,6 +17,21 @@ describe('is', () => {
     expect(values.map(is('undefined'))).toEqual([f, f, f, f, f, f, f, f, true])
     expect(values.map(is('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
   })
+  it('guards basic array types', () => {
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(v => is('any[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(v => is('boolean[]')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(v => is('bigint[]')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(v => is('function[]')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(v => is('null[]')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(v => is('number[]')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(v => is('object[]')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(v => is('string[]')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(v => is('symbol[]')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(v => is('undefined[]')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(v => is('unknown[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
   it('guards objects', () => {
     // Empty object
     expect(is({})({})).toEqual(true)
