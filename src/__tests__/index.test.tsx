@@ -1,4 +1,4 @@
-import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor } from '..'
+import { is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor, requireThat } from '..'
 
 describe('is', () => {
   // prettier-ignore
@@ -252,18 +252,18 @@ describe('parser', () => {
   })
 })
 
-describe('assertThat', () => {
+describe('requireThat', () => {
   it('asserts types', () => {
     const isString = is('string')
-    expect(() => assertThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
+    expect(() => requireThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
     const isNumber = is('number')
-    expect(() => assertThat(5, isNumber)).not.toThrow()
+    expect(() => requireThat(5, isNumber)).not.toThrow()
   })
   it('asserts types with custom error message', () => {
     const isString = is('string')
-    expect(() => assertThat(5, isString, 'woops')).toThrowError('woops')
+    expect(() => requireThat(5, isString, 'woops')).toThrowError('woops')
     const isNumber = is('number')
-    expect(() => assertThat(5, isNumber)).not.toThrow()
+    expect(() => requireThat(5, isNumber)).not.toThrow()
   })
 })
 

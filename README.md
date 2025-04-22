@@ -41,7 +41,7 @@ Type guards are used to confirm the structure of data. If your app deals with AP
   - [Instance types](#instance-types)
   - [User-defined types](#user-defined-types)
   - [Composition](#composition)
-  - [Assertion](#assertion)
+  - [Throwing](#throwing)
   - [Convenience guards](#convenience-guards)
 - [Reliable type guards](#reliable-type-guards)
 
@@ -358,29 +358,29 @@ const isStrOrNumOrNullOrUndef = isStrOrNum.or(isNullOrUndef)
 
 <br />
 
-### Assertion
+### Throwing
 
-Use the `assertThat` function to throw an error if a value does not match against a guard:
+Use the `requireThat` function to throw an error if a value does not match against a guard:
 
 ```ts
-import { is, assertThat } from 'ts-guardian'
+import { is, requireThat } from 'ts-guardian'
 
 const value = getSomeUnknownValue()
 
 // Throws an error if type of value is not 'string'
 // Error message: Type of 'value' does not match type guard.
-assertThat(value, is('string'))
+requireThat(value, is('string'))
 
 // Otherwise, type of value is 'string'
 value.toUpperCase()
 ```
 
-You can optionally pass an error message to `assertThat`:
+You can optionally pass an error message to `requireThat`:
 
 ```ts
 import { isUser } from '../myTypeGuards/isUser'
 
-assertThat(value, isUser, 'Value is not a user!')
+requireThat(value, isUser, 'Value is not a user!')
 ```
 
 <br />
