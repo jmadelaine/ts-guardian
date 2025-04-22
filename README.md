@@ -50,11 +50,7 @@ Type guards are used to confirm the structure of data. If your app deals with AP
 ## Installation
 
 ```
-// npm
 npm i ts-guardian
-
-// yarn
-yarn add ts-guardian
 ```
 
 <br />
