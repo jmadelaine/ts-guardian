@@ -1,5 +1,11 @@
 # Changelog
 
+[1.9.0] 2025-04-23
+
+- Rename `assertThat` to `requireThat` for clearer semantics (avoids confusion with TypeScript assertion)
+- Export `assertThat` as a deprecated alias for backward compatibility
+- Add basic array type support to the `is` function
+
 [1.8.0] 2022-07-07
 
 - Add `isRecordOf`

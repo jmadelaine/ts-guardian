@@ -1,4 +1,4 @@
-import { assertThat, is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor } from '..'
+import { is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor, requireThat } from '..'
 
 describe('is', () => {
   // prettier-ignore
@@ -16,6 +16,21 @@ describe('is', () => {
     expect(values.map(is('symbol'))).toEqual([f, f, f, f, f, f, f, true, f])
     expect(values.map(is('undefined'))).toEqual([f, f, f, f, f, f, f, f, true])
     expect(values.map(is('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+  it('guards basic array types', () => {
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(v => is('any[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(v => is('boolean[]')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(v => is('bigint[]')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(v => is('function[]')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(v => is('null[]')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(v => is('number[]')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(v => is('object[]')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(v => is('string[]')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(v => is('symbol[]')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(v => is('undefined[]')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(v => is('unknown[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards objects', () => {
     // Empty object
@@ -252,18 +267,18 @@ describe('parser', () => {
   })
 })
 
-describe('assertThat', () => {
+describe('requireThat', () => {
   it('asserts types', () => {
     const isString = is('string')
-    expect(() => assertThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
+    expect(() => requireThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
     const isNumber = is('number')
-    expect(() => assertThat(5, isNumber)).not.toThrow()
+    expect(() => requireThat(5, isNumber)).not.toThrow()
   })
   it('asserts types with custom error message', () => {
     const isString = is('string')
-    expect(() => assertThat(5, isString, 'woops')).toThrowError('woops')
+    expect(() => requireThat(5, isString, 'woops')).toThrowError('woops')
     const isNumber = is('number')
-    expect(() => assertThat(5, isNumber)).not.toThrow()
+    expect(() => requireThat(5, isNumber)).not.toThrow()
   })
 })
 

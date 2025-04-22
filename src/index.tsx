@@ -1,12 +1,23 @@
 type Literal = string | number | boolean
 type Instance = new (...args: any[]) => any
-
 type BasicTypeDef = `any` | `boolean` | `bigint` | `function` | `null` | `number` | `object` | `string` | `symbol` | `undefined` | `unknown`
+type BasicArrayTypeDef =
+  | `any[]`
+  | `boolean[]`
+  | `bigint[]`
+  | `function[]`
+  | `null[]`
+  | `number[]`
+  | `object[]`
+  | `string[]`
+  | `symbol[]`
+  | `undefined[]`
+  | `unknown[]`
+
 interface ObjectTypeDef extends Record<PropertyKey, TypeDef> {}
 // Nested TupleTypeDefs cause TypeScript errors, so deliberately not allowing that in the type.
-type TupleTypeDef = [] | (BasicTypeDef | ObjectTypeDef | Guard<any>)[]
-
-type TypeDef = BasicTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
+type TupleTypeDef = [] | (BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | Guard<any>)[]
+type TypeDef = BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
 
 // Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
 // an array of the passed type definition. We need to remember these implied type definitions during validation,
@@ -24,7 +35,6 @@ type ArrayTypeDef = [typeof arrayMarker, TypeDef]
 type RecordTypeDef = [typeof recordMarker, TypeDef]
 type InstanceTypeDef = [typeof instanceMarker, Instance]
 type AndTypeDef = [typeof andMarker, ...InternalTypeDef[]]
-
 type InternalTypeDef = ArrayTypeDef | RecordTypeDef | LiteralTypeDef | InstanceTypeDef | AndTypeDef | TypeDef
 
 // prettier-ignore
@@ -42,10 +52,14 @@ type BasicTypeDefType<T extends BasicTypeDef> =
   : T extends `unknown` ? unknown
   : never
 
+type StripArrayBrackets<T extends string> = T extends `${infer U}[]` ? U : never
+
 type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
   ? V
   : TTypeDef extends BasicTypeDef
   ? BasicTypeDefType<TTypeDef>
+  : TTypeDef extends BasicArrayTypeDef
+  ? BasicTypeDefType<StripArrayBrackets<TTypeDef>>[]
   : TTypeDef extends ObjectTypeDef | TupleTypeDef
   ? { [key in keyof TTypeDef]: TypeDefType<TTypeDef[key]> }
   : never
@@ -106,8 +120,12 @@ const isObjectTypeValid = (t: unknown, value: unknown) =>
 
 const isTypeValid = (t: InternalTypeDef, value: unknown): boolean => {
   try {
-    // Basic type
-    if (typeof t === `string`) return getBasicTypeGuard(t)(value)
+    if (typeof t === `string`) {
+      // Basic array type
+      if (t.endsWith('[]')) return isArrayTypeValid(['a', t.slice(0, -2)] as ArrayTypeDef, value)
+      // Basic type
+      return getBasicTypeGuard(t as BasicTypeDef)(value)
+    }
     // Guard
     if (typeof t === 'function') return t(value)
     // Array
@@ -208,17 +226,24 @@ export const isNumberOrUndefined = isNumber.or(`undefined`)
 export const isStringOrUndefined = isString.or(`undefined`)
 export const isSymbolOrUndefined = isSymbol.or(`undefined`)
 
+type ParserReturn<T, TGuard extends Guard<any>> = T extends undefined
+  ? GuardType<TGuard> | undefined
+  : GuardType<TGuard> extends T
+  ? T | undefined
+  : never
+
 export const parserFor =
   <T extends any = undefined, TGuard extends Guard<any> = Guard<T>>(guard: TGuard) =>
-  (value: any): T extends undefined ? GuardType<TGuard> | undefined : GuardType<TGuard> extends T ? T | undefined : never =>
-    guard(value) ? value : undefined
+  (value: any): ParserReturn<T, TGuard> =>
+    guard(value) ? value : (undefined as ParserReturn<T, TGuard>)
 
-// Change 'assertThat' to 'confirmThat'
-// Assert means to force something to be something else, whereas confirm suggests that we must pass the test to continue
-export const assertThat: <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => asserts value is T = <T extends any>(
+export const requireThat: <T extends any>(value: any, guard: Guard<T>, errorMessage?: string) => asserts value is T = <T extends any>(
   value: any,
   guard: Guard<T>,
   errorMessage?: string
 ) => {
   if (!guard(value)) throw new TypeError(errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`)
 }
+
+/** @deprecated Use requireThat instead */
+export const assertThat = requireThat

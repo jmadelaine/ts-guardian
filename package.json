@@ -1,6 +1,6 @@
 {
   "name": "ts-guardian",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Declarative, composable type guards",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -11,8 +11,8 @@
   "scripts": {
     "build": "tsc",
     "format": "prettier --write \"src/**/*.tsx\"",
-    "prepare": "yarn build",
-    "prepublishOnly": "yarn format",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run format",
     "test": "jest --config jestconfig.json --watch"
   },
   "keywords": [
