@@ -1,59 +1,26 @@
+type BasicTypeMap = {
+  any: any
+  boolean: boolean
+  bigint: bigint
+  function: Function
+  null: null
+  number: number
+  object: object
+  string: string
+  symbol: symbol
+  undefined: undefined
+  unknown: unknown
+}
+type BasicTypeDef = keyof BasicTypeMap
+type BasicArrayTypeDef = `${BasicTypeDef}[]`
 type Literal = string | number | boolean
 type Instance = new (...args: any[]) => any
-type BasicTypeDef = `any` | `boolean` | `bigint` | `function` | `null` | `number` | `object` | `string` | `symbol` | `undefined` | `unknown`
-type BasicArrayTypeDef =
-  | `any[]`
-  | `boolean[]`
-  | `bigint[]`
-  | `function[]`
-  | `null[]`
-  | `number[]`
-  | `object[]`
-  | `string[]`
-  | `symbol[]`
-  | `undefined[]`
-  | `unknown[]`
-
 interface ObjectTypeDef extends Record<PropertyKey, TypeDef> {}
 // Nested TupleTypeDefs cause TypeScript errors, so deliberately not allowing that in the type.
 type TupleTypeDef = [] | (BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | Guard<any>)[]
 type TypeDef = BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
-
-// Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
-// an array of the passed type definition. We need to remember these implied type definitions during validation,
-// so internally, these type definitions are stored as a tuple [<implied_type_definition>, <passed_type_definition>].
-// passed_type_definition is the argument the user passed to the constructor function, while implied_type_definition is
-// indicated by one of the following markers:
-const arrayMarker = `a`
-const recordMarker = `r`
-const literalMarker = `l`
-const instanceMarker = `i`
-const andMarker = `&`
-
-type LiteralTypeDef = [typeof literalMarker, ...Literal[]]
-type ArrayTypeDef = [typeof arrayMarker, TypeDef]
-type RecordTypeDef = [typeof recordMarker, TypeDef]
-type InstanceTypeDef = [typeof instanceMarker, Instance]
-type AndTypeDef = [typeof andMarker, ...InternalTypeDef[]]
-type InternalTypeDef = ArrayTypeDef | RecordTypeDef | LiteralTypeDef | InstanceTypeDef | AndTypeDef | TypeDef
-
-// prettier-ignore
-type BasicTypeDefType<T extends BasicTypeDef> =
-    T extends `any` ? any
-  : T extends `boolean` ? boolean
-  : T extends `bigint` ? bigint
-  : T extends `function` ? Function
-  : T extends `null` ? null
-  : T extends `number` ? number
-  : T extends `object` ? object
-  : T extends `string` ? string
-  : T extends `symbol` ? symbol
-  : T extends `undefined` ? undefined
-  : T extends `unknown` ? unknown
-  : never
-
+type BasicTypeDefType<T extends BasicTypeDef> = BasicTypeMap[T]
 type StripArrayBrackets<T extends string> = T extends `${infer U}[]` ? U : never
-
 type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
   ? V
   : TTypeDef extends BasicTypeDef
@@ -63,6 +30,23 @@ type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
   : TTypeDef extends ObjectTypeDef | TupleTypeDef
   ? { [key in keyof TTypeDef]: TypeDefType<TTypeDef[key]> }
   : never
+
+// Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
+// an array of the passed type definition. We need to remember these implied type definitions during validation,
+// so internally, these type definitions are stored as a tuple [<implied_type_definition>, <passed_type_definition>].
+// passed_type_definition is the argument the user passed to the constructor function, while implied_type_definition is
+// indicated by one of the following markers:
+const arrayMarker = 'a'
+const recordMarker = 'r'
+const literalMarker = 'l'
+const instanceMarker = 'i'
+const andMarker = '&'
+type LiteralTypeDef = [typeof literalMarker, ...Literal[]]
+type ArrayTypeDef = [typeof arrayMarker, TypeDef]
+type RecordTypeDef = [typeof recordMarker, TypeDef]
+type InstanceTypeDef = [typeof instanceMarker, Instance]
+type AndTypeDef = [typeof andMarker, ...InternalTypeDef[]]
+type InternalTypeDef = ArrayTypeDef | RecordTypeDef | LiteralTypeDef | InstanceTypeDef | AndTypeDef | TypeDef
 
 export type Guard<T extends unknown> = {
   (value: unknown): value is T
@@ -76,79 +60,72 @@ export type Guard<T extends unknown> = {
 
 export type GuardType<T extends Guard<any>> = T extends (value: unknown) => value is infer U ? U : never
 
-// prettier-ignore
-const getBasicTypeGuard = (t: BasicTypeDef) => {
-  switch (t) {
-    case `any`: return (_: unknown): _ is any => true
-    case `boolean`: return (v: unknown): v is boolean => typeof v === `boolean`
-    case `bigint`: return (v: unknown): v is bigint => typeof v === `bigint`
-    case `function`: return (v: unknown): v is Function => typeof v === 'function'
-    case `null`: return (v: unknown): v is null => v === null
-    case `number`: return (v: unknown): v is number => typeof v === `number`
-    case `object`: return (v: unknown): v is object => typeof v === `object`
-    case `string`: return (v: unknown): v is string => typeof v === `string`
-    case `symbol`: return (v: unknown): v is symbol => typeof v === `symbol`
-    case `undefined`: return (v: unknown): v is undefined => v === undefined
-    case `unknown`: return (_: unknown): _ is unknown => true
-  }
-}
-
-const isLiteralTypeGuard = (t: InternalTypeDef): t is LiteralTypeDef => Array.isArray(t) && t[0] === literalMarker
-const isLiteralTypeValid = ([_, ...t]: LiteralTypeDef, value: unknown) => t.includes(value as Literal)
-
-const isInstanceTypeGuard = (t: InternalTypeDef): t is InstanceTypeDef => Array.isArray(t) && t[0] === instanceMarker
-const isInstanceTypeValid = ([_, t]: InstanceTypeDef, value: unknown) => value instanceof t
-
-const isAndTypeGuard = (t: InternalTypeDef): t is AndTypeDef => Array.isArray(t) && t[0] === andMarker
-const isAndTypeValid = ([_, ...t]: AndTypeDef, value: unknown) => t.every(g => isTypeValid(g, value))
-
-const isArrayTypeGuard = (t: InternalTypeDef): t is ArrayTypeDef => Array.isArray(t) && t[0] === arrayMarker
-const isArrayTypeValid = ([_, t]: ArrayTypeDef, value: unknown) => Array.isArray(value) && value.every((el: unknown) => isTypeValid(t, el))
-
-const isTupleTypeValid = (t: TupleTypeDef, value: unknown) => Array.isArray(value) && t.every((g, i) => isTypeValid(g, value[i]))
-
-const isRecordTypeGuard = (t: InternalTypeDef): t is RecordTypeDef => Array.isArray(t) && t[0] === recordMarker
-const isRecordTypeValid = ([_, t]: RecordTypeDef, value: unknown) =>
-  typeof value === `object` && value !== null && Object.values(value).every(v => isTypeValid(t, v))
-
-const isObjectTypeValid = (t: unknown, value: unknown) =>
-  typeof t === `object` &&
+const anyGuard = (_: unknown): _ is any => true
+const booleanGuard = (v: unknown): v is boolean => typeof v === 'boolean'
+const bigintGuard = (v: unknown): v is bigint => typeof v === 'bigint'
+const functionGuard = (v: unknown): v is Function => typeof v === 'function'
+const nullGuard = (v: unknown): v is null => v === null
+const numberGuard = (v: unknown): v is number => typeof v === 'number'
+const objectGuard = (v: unknown): v is object => typeof v === 'object'
+const stringGuard = (v: unknown): v is string => typeof v === 'string'
+const symbolGuard = (v: unknown): v is symbol => typeof v === 'symbol'
+const undefinedGuard = (v: unknown): v is undefined => v === undefined
+const unknownGuard = (_: unknown): _ is unknown => true
+const isLiteralTypeDef = (t: InternalTypeDef): t is LiteralTypeDef => Array.isArray(t) && t[0] === literalMarker
+const literalGuard = ([_, ...t]: LiteralTypeDef, value: unknown) => t.includes(value as Literal)
+const isInstanceTypeDef = (t: InternalTypeDef): t is InstanceTypeDef => Array.isArray(t) && t[0] === instanceMarker
+const instanceGuard = ([_, t]: InstanceTypeDef, value: unknown) => value instanceof t
+const isAndTypeDef = (t: InternalTypeDef): t is AndTypeDef => Array.isArray(t) && t[0] === andMarker
+const andGuard = ([_, ...t]: AndTypeDef, value: unknown) => t.every(g => mainGuard(g, value))
+const isArrayTypeDef = (t: InternalTypeDef): t is ArrayTypeDef => Array.isArray(t) && t[0] === arrayMarker
+const arrayGuard = ([_, t]: ArrayTypeDef, value: unknown) => Array.isArray(value) && value.every((el: unknown) => mainGuard(t, el))
+const tupleGuard = (t: TupleTypeDef, value: unknown) => Array.isArray(value) && t.every((g, i) => mainGuard(g, value[i]))
+const isRecordTypeDef = (t: InternalTypeDef): t is RecordTypeDef => Array.isArray(t) && t[0] === recordMarker
+const recordGuard = ([_, t]: RecordTypeDef, value: unknown) =>
+  typeof value === 'object' && value !== null && Object.values(value).every(v => mainGuard(t, v))
+const curlyObjectGuard = (t: ObjectTypeDef, value: unknown) =>
+  typeof t === 'object' &&
   t !== null &&
-  typeof value === `object` &&
+  typeof value === 'object' &&
   value !== null &&
-  Object.keys(t).every(k => isTypeValid((t as ObjectTypeDef)[k], (value as Record<PropertyKey, unknown>)[k]))
+  Object.keys(t).every(k => mainGuard(t[k], (value as { [key: string]: unknown })[k]))
 
-const isTypeValid = (t: InternalTypeDef, value: unknown): boolean => {
+const mainGuard = (t: InternalTypeDef, value: unknown): boolean => {
   try {
-    if (typeof t === `string`) {
-      // Basic array type
-      if (t.endsWith('[]')) return isArrayTypeValid(['a', t.slice(0, -2)] as ArrayTypeDef, value)
+    if (typeof t === 'string') {
+      if (t.endsWith('[]')) return arrayGuard(['a', t.slice(0, -2) as BasicTypeDef], value) // Basic array type
+      // prettier-ignore
       // Basic type
-      return getBasicTypeGuard(t as BasicTypeDef)(value)
+      switch (t) {
+        case 'any': return anyGuard(value)
+        case 'boolean': return booleanGuard(value)
+        case 'bigint': return bigintGuard(value)
+        case 'function': return functionGuard(value)
+        case 'null': return nullGuard(value)
+        case 'number': return numberGuard(value)
+        case 'object': return objectGuard(value)
+        case 'string': return stringGuard(value)
+        case 'symbol': return symbolGuard(value)
+        case 'undefined': return undefinedGuard(value)
+        case 'unknown': return unknownGuard(value)
+        default: return false
+      }
     }
-    // Guard
-    if (typeof t === 'function') return t(value)
-    // Array
-    if (isArrayTypeGuard(t)) return isArrayTypeValid(t, value)
-    // Record
-    if (isRecordTypeGuard(t)) return isRecordTypeValid(t, value)
-    // Literal
-    if (isLiteralTypeGuard(t)) return isLiteralTypeValid(t, value)
-    // Instance
-    if (isInstanceTypeGuard(t)) return isInstanceTypeValid(t, value)
-    // And
-    if (isAndTypeGuard(t)) return isAndTypeValid(t, value)
-    // Tuple
-    if (Array.isArray(t)) return isTupleTypeValid(t as TupleTypeDef, value)
-    // Object
-    return isObjectTypeValid(t, value)
+    if (typeof t === 'function') return t(value) // Guard
+    if (isArrayTypeDef(t)) return arrayGuard(t, value) // Array
+    if (isRecordTypeDef(t)) return recordGuard(t, value) // Record
+    if (isLiteralTypeDef(t)) return literalGuard(t, value) // Literal
+    if (isInstanceTypeDef(t)) return instanceGuard(t, value) // Instance
+    if (isAndTypeDef(t)) return andGuard(t, value) // And
+    if (Array.isArray(t)) return tupleGuard(t, value) // Tuple
+    return curlyObjectGuard(t, value) // Object
   } catch {
     return false
   }
 }
 
 const createGuard = <T extends any>(guardDefinitions: InternalTypeDef[]) => {
-  const guard: Guard<T> = (value: any): value is T => guardDefinitions.some(g => isTypeValid(g, value))
+  const guard: Guard<T> = (value: any): value is T => guardDefinitions.some(g => mainGuard(g, value))
   guard.or = createOr<T>(guardDefinitions)
   guard.orArrayOf = createOrArrayOf<T>(guardDefinitions)
   guard.orRecordOf = createOrRecordOf<T>(guardDefinitions)
@@ -194,37 +171,33 @@ const createOrInstanceOf =
     createGuard<TPrev | (TNew extends new (...args: any[]) => infer V ? V : never)>([...prevTypeDefinitions, [instanceMarker, t]])
 
 export const is = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T>>([t])
-
 export const isArrayOf = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T>[]>([[arrayMarker, t]])
-
 export const isRecordOf = <T extends TypeDef>(t: T) => createGuard<Record<PropertyKey, TypeDefType<T>>>([[recordMarker, t]])
-
 export const isLiterally = <T extends Literal[]>(...t: T) => createGuard<T[number]>([[literalMarker, ...t]])
-
 export const isInstanceOf = <T extends Instance>(t: T) =>
   createGuard<T extends new (...args: any[]) => infer V ? V : never>([[instanceMarker, t]])
 
-export const isBoolean = is(`boolean`)
-export const isBigint = is(`bigint`)
-export const isFunction = is(`function`)
-export const isNull = is(`null`)
-export const isNumber = is(`number`)
-export const isString = is(`string`)
-export const isSymbol = is(`symbol`)
-export const isUndefined = is(`undefined`)
-export const isBooleanOrNull = isBoolean.or(`null`)
-export const isBigintOrNull = isBigint.or(`null`)
-export const isFunctionOrNull = isFunction.or(`null`)
-export const isNumberOrNull = isNumber.or(`null`)
-export const isStringOrNull = isString.or(`null`)
-export const isSymbolOrNull = isSymbol.or(`null`)
-export const isBooleanOrUndefined = isBoolean.or(`undefined`)
-export const isBigintOrUndefined = isBigint.or(`undefined`)
-export const isFunctionOrUndefined = isFunction.or(`undefined`)
-export const isNullOrUndefined = isNull.or(`undefined`)
-export const isNumberOrUndefined = isNumber.or(`undefined`)
-export const isStringOrUndefined = isString.or(`undefined`)
-export const isSymbolOrUndefined = isSymbol.or(`undefined`)
+export const isBoolean = is('boolean')
+export const isBigint = is('bigint')
+export const isFunction = is('function')
+export const isNull = is('null')
+export const isNumber = is('number')
+export const isString = is('string')
+export const isSymbol = is('symbol')
+export const isUndefined = is('undefined')
+export const isBooleanOrNull = isBoolean.or('null')
+export const isBigintOrNull = isBigint.or('null')
+export const isFunctionOrNull = isFunction.or('null')
+export const isNumberOrNull = isNumber.or('null')
+export const isStringOrNull = isString.or('null')
+export const isSymbolOrNull = isSymbol.or('null')
+export const isBooleanOrUndefined = isBoolean.or('undefined')
+export const isBigintOrUndefined = isBigint.or('undefined')
+export const isFunctionOrUndefined = isFunction.or('undefined')
+export const isNullOrUndefined = isNull.or('undefined')
+export const isNumberOrUndefined = isNumber.or('undefined')
+export const isStringOrUndefined = isString.or('undefined')
+export const isSymbolOrUndefined = isSymbol.or('undefined')
 
 type ParserReturn<T, TGuard extends Guard<any>> = T extends undefined
   ? GuardType<TGuard> | undefined

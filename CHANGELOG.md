@@ -1,5 +1,9 @@
 # Changelog
 
+[1.9.1] 2025-04-23
+
+- Refactor internal guards to slightly improve performance
+
 [1.9.0] 2025-04-23
 
 - Rename `assertThat` to `requireThat` for clearer semantics (avoids confusion with TypeScript assertion)
