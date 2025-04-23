@@ -154,7 +154,7 @@ const isStrArrOrNumArr = isArrayOf('string').orArrayOf('number') // guard for 's
 For basic array types, you can pass a string to the `is` function instead of using `isArrayOf`:
 
 ```ts
-import { is, isArrayOf } from 'ts-guardian'
+import { is } from 'ts-guardian'
 
 const isStrArr = is('string[]') // guard for 'string[]'
 const isStrArrOrNumArr = is('string[]').or('number[]') // guard for 'string[] | number[]'
