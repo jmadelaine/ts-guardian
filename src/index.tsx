@@ -13,29 +13,39 @@ type BasicTypeMap = {
 }
 type BasicTypeDef = keyof BasicTypeMap
 type BasicArrayTypeDef = `${BasicTypeDef}[]`
+type BasicOptionalTypeDef = `${Exclude<BasicTypeDef | BasicArrayTypeDef, 'undefined' | 'unknown' | 'any'>}?`
 type Literal = string | number | boolean
 type Instance = new (...args: any[]) => any
 interface ObjectTypeDef extends Record<PropertyKey, TypeDef> {}
 // Nested TupleTypeDefs cause TypeScript errors, so deliberately not allowing that in the type.
-type TupleTypeDef = [] | (BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | Guard<any>)[]
-type TypeDef = BasicTypeDef | BasicArrayTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
+type TupleTypeDef = [] | (BasicTypeDef | BasicArrayTypeDef | BasicOptionalTypeDef | ObjectTypeDef | Guard<any>)[]
+type TypeDef = BasicTypeDef | BasicArrayTypeDef | BasicOptionalTypeDef | ObjectTypeDef | TupleTypeDef | Guard<any>
 type BasicTypeDefType<T extends BasicTypeDef> = BasicTypeMap[T]
 type StripArrayBrackets<T extends string> = T extends `${infer U}[]` ? U : never
+type StripOptionalMark<T extends string> = T extends `${infer U}?` ? U : never
 type TypeDefType<TTypeDef extends unknown> = TTypeDef extends Guard<infer V>
   ? V
   : TTypeDef extends BasicTypeDef
   ? BasicTypeDefType<TTypeDef>
   : TTypeDef extends BasicArrayTypeDef
   ? BasicTypeDefType<StripArrayBrackets<TTypeDef>>[]
+  : TTypeDef extends BasicOptionalTypeDef
+  ?
+      | (StripOptionalMark<TTypeDef> extends infer Stripped
+          ? Stripped extends BasicArrayTypeDef
+            ? BasicTypeDefType<StripArrayBrackets<Stripped>>[]
+            : Stripped extends BasicTypeDef
+            ? BasicTypeDefType<Stripped>
+            : never
+          : never)
+      | undefined
   : TTypeDef extends ObjectTypeDef | TupleTypeDef
   ? { [key in keyof TTypeDef]: TypeDefType<TTypeDef[key]> }
   : never
 
-// Some constructor functions imply certain type constraints, e.g. 'isArrayOf' implies that the guard matches
-// an array of the passed type definition. We need to remember these implied type definitions during validation,
-// so internally, these type definitions are stored as a tuple [<implied_type_definition>, <passed_type_definition>].
-// passed_type_definition is the argument the user passed to the constructor function, while implied_type_definition is
-// indicated by one of the following markers:
+// Some functions imply a type (e.g. 'isArrayOf' implies an array).
+// Internally, we store type defs as [impliedType, passedType].
+// `passedType` is what the user provided; `impliedType` is inferred via a marker.
 const arrayMarker = 'a'
 const recordMarker = 'r'
 const literalMarker = 'l'
@@ -93,7 +103,8 @@ const curlyObjectGuard = (t: ObjectTypeDef, value: unknown) =>
 const mainGuard = (t: InternalTypeDef, value: unknown): boolean => {
   try {
     if (typeof t === 'string') {
-      if (t.endsWith('[]')) return arrayGuard(['a', t.slice(0, -2) as BasicTypeDef], value) // Basic array type
+      if (t.endsWith('[]')) return arrayGuard(['a', t.slice(0, -2) as TypeDef], value) // Basic array type
+      if (t.endsWith('?')) return mainGuard(t.slice(0, -1) as TypeDef, value) || undefinedGuard(value) // Basic optional type
       // prettier-ignore
       // Basic type
       switch (t) {
@@ -181,27 +192,48 @@ export const isOptional = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T
 export const isNullable = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T> | null>([t, 'null'])
 export const isNullish = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T> | null | undefined>([t, 'null', 'undefined'])
 
+/** @deprecated Use `is('boolean')` instead. */
 export const isBoolean = is('boolean')
+/** @deprecated Use `is('bigint')` instead. */
 export const isBigint = is('bigint')
+/** @deprecated Use `is('function')` instead. */
 export const isFunction = is('function')
+/** @deprecated Use `is('null')` instead. */
 export const isNull = is('null')
+/** @deprecated Use `is('number')` instead. */
 export const isNumber = is('number')
+/** @deprecated Use `is('string')` instead. */
 export const isString = is('string')
+/** @deprecated Use `is('symbol')` instead. */
 export const isSymbol = is('symbol')
+/** @deprecated Use `is('undefined')` instead. */
 export const isUndefined = is('undefined')
-export const isBooleanOrNull = isBoolean.or('null')
-export const isBigintOrNull = isBigint.or('null')
-export const isFunctionOrNull = isFunction.or('null')
-export const isNumberOrNull = isNumber.or('null')
-export const isStringOrNull = isString.or('null')
-export const isSymbolOrNull = isSymbol.or('null')
-export const isBooleanOrUndefined = isBoolean.or('undefined')
-export const isBigintOrUndefined = isBigint.or('undefined')
-export const isFunctionOrUndefined = isFunction.or('undefined')
-export const isNullOrUndefined = isNull.or('undefined')
-export const isNumberOrUndefined = isNumber.or('undefined')
-export const isStringOrUndefined = isString.or('undefined')
-export const isSymbolOrUndefined = isSymbol.or('undefined')
+/** @deprecated Use `isNullable('boolean')` instead. */
+export const isBooleanOrNull = isNullable('boolean')
+/** @deprecated Use `isNullable('bigint')` instead. */
+export const isBigintOrNull = isNullable('bigint')
+/** @deprecated Use `isNullable('function')` instead. */
+export const isFunctionOrNull = isNullable('function')
+/** @deprecated Use `isNullable('number')` instead. */
+export const isNumberOrNull = isNullable('number')
+/** @deprecated Use `isNullable('string')` instead. */
+export const isStringOrNull = isNullable('string')
+/** @deprecated Use `isNullable('symbol')` instead. */
+export const isSymbolOrNull = isNullable('symbol')
+/** @deprecated Use `is('boolean?')` instead. */
+export const isBooleanOrUndefined = is('boolean?')
+/** @deprecated Use `is('bigint?')` instead. */
+export const isBigintOrUndefined = is('bigint?')
+/** @deprecated Use `is('function?')` instead. */
+export const isFunctionOrUndefined = is('function?')
+/** @deprecated Use `is('null?')` instead. */
+export const isNullOrUndefined = is('null?')
+/** @deprecated Use `is('number?')` instead. */
+export const isNumberOrUndefined = is('number?')
+/** @deprecated Use `is('string?')` instead. */
+export const isStringOrUndefined = is('string?')
+/** @deprecated Use `is('symbol?')` instead. */
+export const isSymbolOrUndefined = is('symbol?')
 
 type ParserReturn<T, TGuard extends Guard<any>> = T extends undefined
   ? GuardType<TGuard> | undefined
@@ -219,7 +251,21 @@ export const requireThat: <T extends any>(value: any, guard: Guard<T>, errorMess
   guard: Guard<T>,
   errorMessage?: string
 ) => {
-  if (!guard(value)) throw new TypeError(errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`)
+  if (!guard(value)) {
+    if (errorMessage) throw new TypeError(errorMessage)
+    let preview: string
+    try {
+      preview = JSON.stringify(value)
+    } catch {
+      try {
+        preview = String(value)
+      } catch {
+        preview = '[unknown value]'
+      }
+    }
+    if (preview.length > 80) preview = preview.slice(0, 77) + '...'
+    throw new TypeError(`Type of '${preview}' does not match type guard.`)
+  }
 }
 
 /** @deprecated Use requireThat instead */

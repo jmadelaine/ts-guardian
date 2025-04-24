@@ -1,9 +1,10 @@
 import { is, isArrayOf, isInstanceOf, isLiterally, isNullable, isNullish, isOptional, isRecordOf, parserFor, requireThat } from '..'
 
+const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+const f = false
+
 describe('is', () => {
   it('guards basic types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(is('any'))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(is('boolean'))).toEqual([true, f, f, f, f, f, f, f, f])
     expect(values.map(is('bigint'))).toEqual([f, true, f, f, f, f, f, f, f])
@@ -17,8 +18,6 @@ describe('is', () => {
     expect(values.map(is('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards basic array types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(v => is('any[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(v => is('boolean[]')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
     expect(values.map(v => is('bigint[]')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
@@ -30,6 +29,38 @@ describe('is', () => {
     expect(values.map(v => is('symbol[]')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
     expect(values.map(v => is('undefined[]')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
     expect(values.map(v => is('unknown[]')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+  it('guards basic optional types', () => {
+    expect(values.map(is('boolean?'))).toEqual([true, f, f, f, f, f, f, f, true])
+    expect(values.map(is('bigint?'))).toEqual([f, true, f, f, f, f, f, f, true])
+    expect(values.map(is('function?'))).toEqual([f, f, true, f, f, f, f, f, true])
+    expect(values.map(is('null?'))).toEqual([f, f, f, true, f, f, f, f, true])
+    expect(values.map(is('number?'))).toEqual([f, f, f, f, true, f, f, f, true])
+    expect(values.map(is('object?'))).toEqual([f, f, f, true, f, true, f, f, true])
+    expect(values.map(is('string?'))).toEqual([f, f, f, f, f, f, true, f, true])
+    expect(values.map(is('symbol?'))).toEqual([f, f, f, f, f, f, f, true, true])
+    expect(values.map(v => is('any[]?')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(v => is('boolean[]?')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(v => is('bigint[]?')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(v => is('function[]?')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(v => is('null[]?')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(v => is('number[]?')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(v => is('object[]?')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(v => is('string[]?')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(v => is('symbol[]?')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(v => is('undefined[]?')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(v => is('unknown[]?')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(is('any[]?')(undefined)).toEqual(true)
+    expect(is('boolean[]?')(undefined)).toEqual(true)
+    expect(is('bigint[]?')(undefined)).toEqual(true)
+    expect(is('function[]?')(undefined)).toEqual(true)
+    expect(is('null[]?')(undefined)).toEqual(true)
+    expect(is('number[]?')(undefined)).toEqual(true)
+    expect(is('object[]?')(undefined)).toEqual(true)
+    expect(is('string[]?')(undefined)).toEqual(true)
+    expect(is('symbol[]?')(undefined)).toEqual(true)
+    expect(is('undefined[]?')(undefined)).toEqual(true)
+    expect(is('unknown[]?')(undefined)).toEqual(true)
   })
   it('guards objects', () => {
     // Empty object
@@ -89,8 +120,6 @@ describe('is', () => {
 
 describe('isArrayOf', () => {
   it('guards basic types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(v => isArrayOf('any')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(v => isArrayOf('boolean')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
     expect(values.map(v => isArrayOf('bigint')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
@@ -134,8 +163,6 @@ describe('isArrayOf', () => {
 
 describe('isRecordOf', () => {
   it('guards basic types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(v => isRecordOf('any')({ k: v }))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(v => isRecordOf('boolean')({ k: v }))).toEqual([true, f, f, f, f, f, f, f, f])
     expect(values.map(v => isRecordOf('bigint')({ k: v }))).toEqual([f, true, f, f, f, f, f, f, f])
@@ -264,13 +291,32 @@ describe('parser', () => {
 })
 
 describe('requireThat', () => {
-  it('asserts types', () => {
+  it('requires types', () => {
     const isString = is('string')
     expect(() => requireThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
     const isNumber = is('number')
     expect(() => requireThat(5, isNumber)).not.toThrow()
   })
-  it('asserts types with custom error message', () => {
+  it('requires types with truncated preview in default error message', () => {
+    const john = { id: 7, name: 'John' }
+    const tim = {
+      id: '7',
+      name: 'Tim',
+      age: 34,
+      email: 'tim@example.com',
+      isAdmin: false,
+      createdAt: '2024-01-01T12:00:00Z',
+      updatedAt: '2024-04-24T12:00:00Z',
+    }
+    const isString = is('number')
+    const isJohn = is({ id: 'number', name: 'string' })
+    expect(() => requireThat(john, isString)).toThrowError(`Type of '{"id":7,"name":"John"}' does not match type guard.`)
+    expect(() => requireThat(tim, isJohn)).toThrowError(
+      `Type of '{"id":"7","name":"Tim","age":34,"email":"tim@example.com","isAdmin":false,"cr...' does not match type guard.`
+    )
+    expect(() => requireThat(john, isJohn)).not.toThrow()
+  })
+  it('requires types with custom error message', () => {
     const isString = is('string')
     expect(() => requireThat(5, isString, 'woops')).toThrowError('woops')
     const isNumber = is('number')
@@ -302,8 +348,6 @@ describe('and', () => {
 
 describe('isOptional', () => {
   it('guards optional types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(isOptional('any'))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(isOptional('boolean'))).toEqual([true, f, f, f, f, f, f, f, true])
     expect(values.map(isOptional('bigint'))).toEqual([f, true, f, f, f, f, f, f, true])
@@ -320,8 +364,6 @@ describe('isOptional', () => {
 
 describe('isNullable', () => {
   it('guards nullable types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(isNullable('any'))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(isNullable('boolean'))).toEqual([true, f, f, true, f, f, f, f, f])
     expect(values.map(isNullable('bigint'))).toEqual([f, true, f, true, f, f, f, f, f])
@@ -338,8 +380,6 @@ describe('isNullable', () => {
 
 describe('isNullish', () => {
   it('guards nullish types', () => {
-    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-    const f = false
     expect(values.map(isNullish('any'))).toEqual([true, true, true, true, true, true, true, true, true])
     expect(values.map(isNullish('boolean'))).toEqual([true, f, f, true, f, f, f, f, true])
     expect(values.map(isNullish('bigint'))).toEqual([f, true, f, true, f, f, f, f, true])
