@@ -251,7 +251,21 @@ export const requireThat: <T extends any>(value: any, guard: Guard<T>, errorMess
   guard: Guard<T>,
   errorMessage?: string
 ) => {
-  if (!guard(value)) throw new TypeError(errorMessage ?? `Type of '${value?.name ?? String(value)}' does not match type guard.`)
+  if (!guard(value)) {
+    if (errorMessage) throw new TypeError(errorMessage)
+    let preview: string
+    try {
+      preview = JSON.stringify(value)
+    } catch {
+      try {
+        preview = String(value)
+      } catch {
+        preview = '[unknown value]'
+      }
+    }
+    if (preview.length > 80) preview = preview.slice(0, 77) + '...'
+    throw new TypeError(`Type of '${preview}' does not match type guard.`)
+  }
 }
 
 /** @deprecated Use requireThat instead */

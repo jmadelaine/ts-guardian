@@ -291,13 +291,32 @@ describe('parser', () => {
 })
 
 describe('requireThat', () => {
-  it('asserts types', () => {
+  it('requires types', () => {
     const isString = is('string')
     expect(() => requireThat(5, isString)).toThrowError("Type of '5' does not match type guard.")
     const isNumber = is('number')
     expect(() => requireThat(5, isNumber)).not.toThrow()
   })
-  it('asserts types with custom error message', () => {
+  it('requires types with truncated preview in default error message', () => {
+    const john = { id: 7, name: 'John' }
+    const tim = {
+      id: '7',
+      name: 'Tim',
+      age: 34,
+      email: 'tim@example.com',
+      isAdmin: false,
+      createdAt: '2024-01-01T12:00:00Z',
+      updatedAt: '2024-04-24T12:00:00Z',
+    }
+    const isString = is('number')
+    const isJohn = is({ id: 'number', name: 'string' })
+    expect(() => requireThat(john, isString)).toThrowError(`Type of '{"id":7,"name":"John"}' does not match type guard.`)
+    expect(() => requireThat(tim, isJohn)).toThrowError(
+      `Type of '{"id":"7","name":"Tim","age":34,"email":"tim@example.com","isAdmin":false,"cr...' does not match type guard.`
+    )
+    expect(() => requireThat(john, isJohn)).not.toThrow()
+  })
+  it('requires types with custom error message', () => {
     const isString = is('string')
     expect(() => requireThat(5, isString, 'woops')).toThrowError('woops')
     const isNumber = is('number')
