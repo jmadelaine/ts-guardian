@@ -14,7 +14,7 @@
     "noImplicitReturns": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "removeComments": true,
+    "removeComments": false,
     "outDir": "lib",
     "lib": ["ES2020", "dom"]
   },

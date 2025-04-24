@@ -1,5 +1,11 @@
 # Changelog
 
+[1.11.0] 2025-04-24
+
+- Add optional `?` suffix to basic type keys and basic array type keys
+- Deprecate convenience guards
+- Improve `requireThat` error message
+
 [1.10.0] 2025-04-24
 
 - Add `isOptional`, `isNullable`, and `isNullish` type guards
