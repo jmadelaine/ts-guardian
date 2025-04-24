@@ -177,6 +177,10 @@ export const isLiterally = <T extends Literal[]>(...t: T) => createGuard<T[numbe
 export const isInstanceOf = <T extends Instance>(t: T) =>
   createGuard<T extends new (...args: any[]) => infer V ? V : never>([[instanceMarker, t]])
 
+export const isOptional = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T> | undefined>([t, 'undefined'])
+export const isNullable = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T> | null>([t, 'null'])
+export const isNullish = <T extends TypeDef>(t: T) => createGuard<TypeDefType<T> | null | undefined>([t, 'null', 'undefined'])
+
 export const isBoolean = is('boolean')
 export const isBigint = is('bigint')
 export const isFunction = is('function')

@@ -1,7 +1,6 @@
-import { is, isArrayOf, isInstanceOf, isLiterally, isRecordOf, parserFor, requireThat } from '..'
+import { is, isArrayOf, isInstanceOf, isLiterally, isNullable, isNullish, isOptional, isRecordOf, parserFor, requireThat } from '..'
 
 describe('is', () => {
-  // prettier-ignore
   it('guards basic types', () => {
     const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
     const f = false
@@ -89,21 +88,20 @@ describe('is', () => {
 })
 
 describe('isArrayOf', () => {
-  // prettier-ignore
   it('guards basic types', () => {
-      const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-      const f = false
-      expect(values.map(v => isArrayOf('any')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
-      expect(values.map(v => isArrayOf('boolean')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
-      expect(values.map(v => isArrayOf('bigint')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
-      expect(values.map(v => isArrayOf('function')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
-      expect(values.map(v => isArrayOf('null')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
-      expect(values.map(v => isArrayOf('number')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
-      expect(values.map(v => isArrayOf('object')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
-      expect(values.map(v => isArrayOf('string')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
-      expect(values.map(v => isArrayOf('symbol')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
-      expect(values.map(v => isArrayOf('undefined')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
-      expect(values.map(v => isArrayOf('unknown')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(v => isArrayOf('any')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(v => isArrayOf('boolean')([v]))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(v => isArrayOf('bigint')([v]))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(v => isArrayOf('function')([v]))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(v => isArrayOf('null')([v]))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(v => isArrayOf('number')([v]))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(v => isArrayOf('object')([v]))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(v => isArrayOf('string')([v]))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(v => isArrayOf('symbol')([v]))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(v => isArrayOf('undefined')([v]))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(v => isArrayOf('unknown')([v]))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards objects', () => {
     expect(isArrayOf({ a: 'string' })([{ a: '' }])).toEqual(true)
@@ -135,21 +133,20 @@ describe('isArrayOf', () => {
 })
 
 describe('isRecordOf', () => {
-  // prettier-ignore
   it('guards basic types', () => {
-      const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
-      const f = false
-      expect(values.map(v => isRecordOf('any')({ k: v}))).toEqual([true, true, true, true, true, true, true, true, true])
-      expect(values.map(v => isRecordOf('boolean')({ k: v}))).toEqual([true, f, f, f, f, f, f, f, f])
-      expect(values.map(v => isRecordOf('bigint')({ k: v}))).toEqual([f, true, f, f, f, f, f, f, f])
-      expect(values.map(v => isRecordOf('function')({ k: v}))).toEqual([f, f, true, f, f, f, f, f, f])
-      expect(values.map(v => isRecordOf('null')({ k: v}))).toEqual([f, f, f, true, f, f, f, f, f])
-      expect(values.map(v => isRecordOf('number')({ k: v}))).toEqual([f, f, f, f, true, f, f, f, f])
-      expect(values.map(v => isRecordOf('object')({ k: v}))).toEqual([f, f, f, true, f, true, f, f, f])
-      expect(values.map(v => isRecordOf('string')({ k: v}))).toEqual([f, f, f, f, f, f, true, f, f])
-      expect(values.map(v => isRecordOf('symbol')({ k: v}))).toEqual([f, f, f, f, f, f, f, true, f])
-      expect(values.map(v => isRecordOf('undefined')({ k: v}))).toEqual([f, f, f, f, f, f, f, f, true])
-      expect(values.map(v => isRecordOf('unknown')({ k: v}))).toEqual([true, true, true, true, true, true, true, true, true])
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(v => isRecordOf('any')({ k: v }))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(v => isRecordOf('boolean')({ k: v }))).toEqual([true, f, f, f, f, f, f, f, f])
+    expect(values.map(v => isRecordOf('bigint')({ k: v }))).toEqual([f, true, f, f, f, f, f, f, f])
+    expect(values.map(v => isRecordOf('function')({ k: v }))).toEqual([f, f, true, f, f, f, f, f, f])
+    expect(values.map(v => isRecordOf('null')({ k: v }))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(v => isRecordOf('number')({ k: v }))).toEqual([f, f, f, f, true, f, f, f, f])
+    expect(values.map(v => isRecordOf('object')({ k: v }))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(v => isRecordOf('string')({ k: v }))).toEqual([f, f, f, f, f, f, true, f, f])
+    expect(values.map(v => isRecordOf('symbol')({ k: v }))).toEqual([f, f, f, f, f, f, f, true, f])
+    expect(values.map(v => isRecordOf('undefined')({ k: v }))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(v => isRecordOf('unknown')({ k: v }))).toEqual([true, true, true, true, true, true, true, true, true])
   })
   it('guards objects', () => {
     expect(isRecordOf({ a: 'string' })({ k: { a: '' } })).toEqual(true)
@@ -254,7 +251,6 @@ describe('parser', () => {
     expect(parserFor(is('undefined'))(und)).toBe(und)
     const unk = ''
     expect(parserFor(is('unknown'))(unk)).toBe(unk)
-
     expect(parserFor(is('number'))(st)).toBe(undefined)
     expect(parserFor(is('string'))(num)).toBe(undefined)
   })
@@ -301,5 +297,59 @@ describe('and', () => {
     expect(isA.and(isB).or(isC).or(isD)(value2)).toEqual(true)
     expect(isA.and(isB).or(isC).and(isD)(value2)).toEqual(false)
     expect(isA.and(isB).or(isC).and(isD)(value3)).toEqual(true)
+  })
+})
+
+describe('isOptional', () => {
+  it('guards optional types', () => {
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(isOptional('any'))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(isOptional('boolean'))).toEqual([true, f, f, f, f, f, f, f, true])
+    expect(values.map(isOptional('bigint'))).toEqual([f, true, f, f, f, f, f, f, true])
+    expect(values.map(isOptional('function'))).toEqual([f, f, true, f, f, f, f, f, true])
+    expect(values.map(isOptional('null'))).toEqual([f, f, f, true, f, f, f, f, true])
+    expect(values.map(isOptional('number'))).toEqual([f, f, f, f, true, f, f, f, true])
+    expect(values.map(isOptional('object'))).toEqual([f, f, f, true, f, true, f, f, true])
+    expect(values.map(isOptional('string'))).toEqual([f, f, f, f, f, f, true, f, true])
+    expect(values.map(isOptional('symbol'))).toEqual([f, f, f, f, f, f, f, true, true])
+    expect(values.map(isOptional('undefined'))).toEqual([f, f, f, f, f, f, f, f, true])
+    expect(values.map(isOptional('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+})
+
+describe('isNullable', () => {
+  it('guards nullable types', () => {
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(isNullable('any'))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(isNullable('boolean'))).toEqual([true, f, f, true, f, f, f, f, f])
+    expect(values.map(isNullable('bigint'))).toEqual([f, true, f, true, f, f, f, f, f])
+    expect(values.map(isNullable('function'))).toEqual([f, f, true, true, f, f, f, f, f])
+    expect(values.map(isNullable('null'))).toEqual([f, f, f, true, f, f, f, f, f])
+    expect(values.map(isNullable('number'))).toEqual([f, f, f, true, true, f, f, f, f])
+    expect(values.map(isNullable('object'))).toEqual([f, f, f, true, f, true, f, f, f])
+    expect(values.map(isNullable('string'))).toEqual([f, f, f, true, f, f, true, f, f])
+    expect(values.map(isNullable('symbol'))).toEqual([f, f, f, true, f, f, f, true, f])
+    expect(values.map(isNullable('undefined'))).toEqual([f, f, f, true, f, f, f, f, true])
+    expect(values.map(isNullable('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+})
+
+describe('isNullish', () => {
+  it('guards nullish types', () => {
+    const values = [true, BigInt(0), () => undefined, null, 0, {}, '', Symbol(), undefined]
+    const f = false
+    expect(values.map(isNullish('any'))).toEqual([true, true, true, true, true, true, true, true, true])
+    expect(values.map(isNullish('boolean'))).toEqual([true, f, f, true, f, f, f, f, true])
+    expect(values.map(isNullish('bigint'))).toEqual([f, true, f, true, f, f, f, f, true])
+    expect(values.map(isNullish('function'))).toEqual([f, f, true, true, f, f, f, f, true])
+    expect(values.map(isNullish('null'))).toEqual([f, f, f, true, f, f, f, f, true])
+    expect(values.map(isNullish('number'))).toEqual([f, f, f, true, true, f, f, f, true])
+    expect(values.map(isNullish('object'))).toEqual([f, f, f, true, f, true, f, f, true])
+    expect(values.map(isNullish('string'))).toEqual([f, f, f, true, f, f, true, f, true])
+    expect(values.map(isNullish('symbol'))).toEqual([f, f, f, true, f, f, f, true, true])
+    expect(values.map(isNullish('undefined'))).toEqual([f, f, f, true, f, f, f, f, true])
+    expect(values.map(isNullish('unknown'))).toEqual([true, true, true, true, true, true, true, true, true])
   })
 })

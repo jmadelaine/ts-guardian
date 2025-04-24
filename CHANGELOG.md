@@ -1,5 +1,9 @@
 # Changelog
 
+[1.10.0] 2025-04-24
+
+- Add `isOptional`, `isNullable`, and `isNullish` type guards
+
 [1.9.1] 2025-04-23
 
 - Refactor internal guards to slightly improve performance
