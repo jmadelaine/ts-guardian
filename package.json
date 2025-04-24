@@ -36,6 +36,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jmadelaine/ts-guardian.git"
+    "url": "git+https://github.com/jmadelaine/ts-guardian.git"
   }
 }
