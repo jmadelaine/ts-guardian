@@ -31,16 +31,16 @@ npm install ts-guardian
 Import the `is` function and create a type-guard, such as `isUser`. Use that type-guard to confirm objects match the type:
 
 ```ts
-import { is, isOptional } from 'ts-guardian'
+import { is } from 'ts-guardian'
 
 const isUser = is({
   id: 'number',
   name: 'string',
-  email: isOptional('string'),
+  email: 'string?',
   teamIds: 'number[]',
 })
 
-isUser({ id: 1, name: 'John', teamIds: [12345] }) // true
+isUser({ id: 1, name: 'John', teamIds: [2, 3] }) // true
 ```
 
 <br />
@@ -68,7 +68,6 @@ isUser({ id: 1, name: 'John', teamIds: [12345] }) // true
 - [Parsing to user-defined types](#parsing-to-user-defined-types)
 - [Composition](#composition)
 - [Throwing](#throwing)
-- [Convenience guards](#convenience-guards)
 
 <br />
 
@@ -284,6 +283,15 @@ const isNullableNumber = isNullable('number') // guard for 'number | null'
 const isNullishNumber = isNullish('number') // guard for 'number | null | undefined'
 ```
 
+For optional basic types, you can simply pass a string to the `is` function instead of using `isOptional`:
+
+```ts
+import { is } from 'ts-guardian'
+
+const isOptionalString = is('string?') // guard for 'string | undefined'
+const isOptionalNumberArray = is('number[]?') // guard for 'number[] | undefined'
+```
+
 <br />
 
 ### Parsing to user-defined types
@@ -365,7 +373,7 @@ Guards can be composed from existing guards:
 
 ```ts
 const isString = is('string') // guard for 'string'
-const isStringOrUndefined = isString.or('undefined') // guard for 'string | undefined'
+const isStringOrNumber = isString.or('number') // guard for 'string | number'
 ```
 
 You can even pass guards into `or`:
@@ -401,36 +409,6 @@ import { isUser } from '../myTypeGuards/isUser'
 
 requireThat(value, isUser, 'Value is not a user!')
 ```
-
-<br />
-
-### Convenience guards
-
-Some frequently used guards are provided for convenience:
-
-| Guard                   | Type                                   | Equivalent to                    |
-| ----------------------- | -------------------------------------- | -------------------------------- |
-| `isBoolean`             | `boolean`                              | `is('boolean')`                  |
-| `isBooleanOrNull`       | <code>boolean &#124; null</code>       | `is('boolean').or('null')`       |
-| `isBooleanOrUndefined`  | <code>boolean &#124; undefined</code>  | `is('boolean').or('undefined')`  |
-| `isBigint`              | `bigint`                               | `is('bigint')`                   |
-| `isBigintOrNull`        | <code>bigint &#124; null</code>        | `is('bigint').or('null')`        |
-| `isBigintOrUndefined`   | <code>bigint &#124; undefined</code>   | `is('bigint').or('undefined')`   |
-| `isFunction`            | `Function`                             | `is('function')`                 |
-| `isFunctionOrNull`      | <code>Function &#124; null</code>      | `is('function').or('null')`      |
-| `isFunctionOrUndefined` | <code>Function &#124; undefined</code> | `is('function').or('undefined')` |
-| `isNull`                | `null`                                 | `is('null')`                     |
-| `isNullOrUndefined`     | <code>null &#124; undefined</code>     | `is('null').or('undefined')`     |
-| `isNumber`              | `number`                               | `is('number')`                   |
-| `isNumberOrNull`        | <code>number &#124; null</code>        | `is('number').or('null')`        |
-| `isNumberOrUndefined`   | <code>number &#124; undefined</code>   | `is('number').or('undefined')`   |
-| `isString`              | `string`                               | `is('string')`                   |
-| `isStringOrNull`        | <code>string &#124; null</code>        | `is('string').or('null')`        |
-| `isStringOrUndefined`   | <code>string &#124; undefined</code>   | `is('string').or('undefined')`   |
-| `isSymbol`              | `symbol`                               | `is('symbol')`                   |
-| `isSymbolOrNull`        | <code>symbol &#124; null</code>        | `is('symbol').or('null')`        |
-| `isSymbolOrUndefined`   | <code>symbol &#124; undefined</code>   | `is('symbol').or('undefined')`   |
-| `isUndefined`           | `undefined`                            | `is('undefined')`                |
 
 <br />
 
@@ -498,16 +476,16 @@ Rather than making assumptions about the value, you define a **primitive-based t
 > A _primitive-based type_ is a type constructed from only primitive TypeScript types (`string`, `number`, `undefined`, `any`, etc...).
 
 ```ts
-import { is } from 'ts-guardian'
+import { is, isOptional } from 'ts-guardian'
 
 // We make no assumptions that the data is a user-defined type
 const isUser = is({
   id: 'number',
   name: 'string',
-  email: isOptional('string'),
+  email: 'string?',
   phone: isOptional({
-    primary: isOptional('string'),
-    secondary: isOptional('string'),
+    primary: 'string?',
+    secondary: 'string?',
   }),
   teamIds: 'string[]',
 })
